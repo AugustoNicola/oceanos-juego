@@ -8,6 +8,7 @@ from jugador.RandyBot.randy import RandyBot
 from jugador.CLI.cli import JugadorCLI
 from jugador.base import JugadorBase
 from jugador.PuntosBot.puntosbot_mk1 import PuntosBotMk1
+from jugador.PuntosBot.puntosbot_mk2 import PuntosBotMk2
 
 class AdministradorDeJuego():
 	class Verbosidad(Enum):
@@ -380,6 +381,6 @@ class AdministradorDeJuego():
 				self._cantidadDeCartasPorJugadorPorTipo[j][tipo] += cantidadDeCartasEnManoDeTipo[tipo] + cantidadDeCartasEnZonaDeDúosDeTipo[tipo]
 	
 if __name__ == '__main__':
-	administrador = AdministradorDeJuego([JugadorCLI, PuntosBotMk1], verbosidad=AdministradorDeJuego.Verbosidad.JUGADOR)
+	administrador = AdministradorDeJuego([PuntosBotMk2, JugadorCLI], verbosidad=AdministradorDeJuego.Verbosidad.JUGADOR)
 	ganador = administrador.jugarPartida()
 	print(f"Ganador: {ganador}")
