@@ -23,43 +23,53 @@ class PuntosBotMk2(JugadorBase):
 		
 		
 		with open("configuracion_mk2.txt", "r") as configfile:
-			self.BONUS_MULTIPLICADOR_OBTENIDO = float(configfile.readline().split("=")[1].strip())
-			self.OBTENER_MULTIPLICADOR = float(configfile.readline().split("=")[1].strip())
+			self.COEF_MULTIPLICADOR_OBTENIDO = float(configfile.readline().split("=")[1].strip())
+			self.PLUS_OBTENER_MULTIPLICADOR = float(configfile.readline().split("=")[1].strip())
 			arrancarColeccionable = float(configfile.readline().split("=")[1].strip())
-			self.ARRANCAR_COLECCIONABLE = dict((col, arrancarColeccionable) for col in [Carta.Tipo.CONCHA, Carta.Tipo.PULPO, Carta.Tipo.ANCLA, Carta.Tipo.PINGUINO])
-			self.VALOR_BASE_PRIMER_CARTA_DUO = float(configfile.readline().split("=")[1].strip())
-			self.BONUS_COMPLETAR_DUO = float(configfile.readline().split("=")[1].strip())
-			self.VALOR_BASE_SIRENA = float(configfile.readline().split("=")[1].strip())
+			self.COEF_ARRANCAR_COLECCIONABLE = dict((col, arrancarColeccionable) for col in [Carta.Tipo.CONCHA, Carta.Tipo.PULPO, Carta.Tipo.ANCLA, Carta.Tipo.PINGUINO])
+			#*self.VALOR_BASE_PRIMER_CARTA_DUO = float(configfile.readline().split("=")[1].strip())
+			self.COEF_COMPLETAR_DUO = float(configfile.readline().split("=")[1].strip())
+			self.PLUS_SIRENA = float(configfile.readline().split("=")[1].strip())
+			# ==============================
+			self.COEF_SEGUIR_COLECCIONABLE = float(configfile.readline().split("=")[1].strip())
+			primerPez = float(configfile.readline().split("=")[1].strip())
+			primerBarco = float(configfile.readline().split("=")[1].strip())
+			primerCangrejo = float(configfile.readline().split("=")[1].strip())
+			primerNadadorTiburón = float(configfile.readline().split("=")[1].strip())
+			self.PLUS_PRIMER_DÚO = {
+				Carta.Tipo.PEZ: primerPez,
+				Carta.Tipo.BARCO: primerBarco,
+				Carta.Tipo.CANGREJO: primerCangrejo,
+				Carta.Tipo.NADADOR: primerNadadorTiburón,
+				Carta.Tipo.TIBURÓN: primerNadadorTiburón
+			}
 		
-		
-		#*self.BONUS_MULTIPLICADOR_OBTENIDO = 1.0
-		self.PROXIMO_COLECCIONABLE = {
-			Carta.Tipo.CONCHA: 2.0 * 2.0,
-			Carta.Tipo.PULPO: 3.0 * 2.0,
-			Carta.Tipo.PINGUINO: 2.0 * 2.0,
-			Carta.Tipo.ANCLA: 5.0 * 2.0
+		#*self.COEF_MULTIPLICADOR_OBTENIDO = 1.0
+		self.VALOR_PROXIMO_COLECCIONABLE = {
+			Carta.Tipo.CONCHA: 2.0 * self.COEF_SEGUIR_COLECCIONABLE,
+			Carta.Tipo.PULPO: 3.0 * self.COEF_SEGUIR_COLECCIONABLE,
+			Carta.Tipo.PINGUINO: 2.0 * self.COEF_SEGUIR_COLECCIONABLE,
+			Carta.Tipo.ANCLA: 5.0 * self.COEF_SEGUIR_COLECCIONABLE
 		}
-		self.PRIMER_COLECCIONABLE = {
+		self.VALOR_PRIMER_COLECCIONABLE = {
 			Carta.Tipo.CONCHA: 0.0,
 			Carta.Tipo.PULPO: 0.0,
 			Carta.Tipo.PINGUINO: 1.0,
 			Carta.Tipo.ANCLA: 0.0
 		}
-		#*self.ARRANCAR_COLECCIONABLE = {
+		
+		#*self.COEF_ARRANCAR_COLECCIONABLE = {
 		#*	Carta.Tipo.CONCHA: 2.0,
 		#*	Carta.Tipo.PULPO: 2.0,
 		#*	Carta.Tipo.PINGUINO: 2.0,
 		#*	Carta.Tipo.ANCLA: 2.0
 		#*}
-		#*self.OBTENER_MULTIPLICADOR = 0.0
+		#*self.PLUS_OBTENER_MULTIPLICADOR = 0.0
 		#*self.VALOR_BASE_PRIMER_CARTA_DUO = 1.0
-		#*self.BONUS_COMPLETAR_DUO = 3.0
-		#*self.VALOR_BASE_SIRENA = 10.0
+		#*self.COEF_COMPLETAR_DUO = 3.0
+		#*self.PLUS_SIRENA = 10.0
 		
-		self.VALOR_BASE_PRIMER_PEZ = 0.01
-		self.VALOR_BASE_PRIMER_BARCO = 0.03
-		self.VALOR_BASE_PRIMER_CANGREJO = 0.06
-		self.VALOR_BASE_PRIMER_NADADORTIBURON = 0.08
+		
 		
 		
 	
@@ -378,26 +388,26 @@ class PuntosBotMk2(JugadorBase):
 		valor = 0.0
 		# Primero, aumentamos el valor en caso de que tengamos el multiplicador correspondiente en mano
 		if carta.tipo == Carta.Tipo.BARCO and self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.FARO) > 0:
-			valor += 1.0 * self.BONUS_MULTIPLICADOR_OBTENIDO
+			valor += 1.0 * self.COEF_MULTIPLICADOR_OBTENIDO
 		elif carta.tipo == Carta.Tipo.ANCLA and self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.CAPITÁN) > 0:
-			valor += 3.0 * self.BONUS_MULTIPLICADOR_OBTENIDO
+			valor += 3.0 * self.COEF_MULTIPLICADOR_OBTENIDO
 		elif carta.tipo == Carta.Tipo.PINGUINO and self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.COLONIA) > 0:
-			valor += 2.0 * self.BONUS_MULTIPLICADOR_OBTENIDO
+			valor += 2.0 * self.COEF_MULTIPLICADOR_OBTENIDO
 		elif carta.tipo == Carta.Tipo.PEZ and self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.CARDUMEN) > 0:
-			valor += 1.0 * self.BONUS_MULTIPLICADOR_OBTENIDO
+			valor += 1.0 * self.COEF_MULTIPLICADOR_OBTENIDO
 		
 		
 		if carta.esColeccionable():
 			if self._cantidadDeCartasDeTipoEnMano(carta.tipo) > 0:
 				# Si ya tenemos una carta del tipo de coleccionable, su valor es cuánto suma conseguir otro
-				valor += self.PROXIMO_COLECCIONABLE[carta.tipo]
+				valor += self.VALOR_PROXIMO_COLECCIONABLE[carta.tipo]
 			else:
 				# Si no tenemos una carta del tipo de coleccionable, su valor es cuánto suma conseguir el primero
 				#   y un poco de bonificación por qué tan probable es conseguir otro coleccionable del tipo 
 				valor += (
-					self.PRIMER_COLECCIONABLE[carta.tipo] +
+					self.VALOR_PRIMER_COLECCIONABLE[carta.tipo] +
 					(
-						self.ARRANCAR_COLECCIONABLE[carta.tipo]
+						self.COEF_ARRANCAR_COLECCIONABLE[carta.tipo]
 						* self._cantidadDeCartasDeTipoEnMazoEstimado(carta.tipo)
 						/ self._juego.cantidadDeCartasEnMazo
 					)
@@ -407,26 +417,26 @@ class PuntosBotMk2(JugadorBase):
 			valor += (
 				self._cantidadDeCartasDeTipoEnMano(self._tipoAfectadoPorMultiplicador(carta.tipo)) *
 				self._bonificacionPorMultiplicador(carta.tipo)
-			) + self.OBTENER_MULTIPLICADOR
+			) + self.PLUS_OBTENER_MULTIPLICADOR
 		elif carta.tipo == Carta.Tipo.PEZ:
 			if self._cantidadDeCartasDeTipoEnMano(carta.tipo) == 0:
 				# Si no tenemos una carta para completar el dúo, no vale nada
-				valor += 0.0 + self.VALOR_BASE_PRIMER_PEZ
+				valor += 0.0 + self.PLUS_PRIMER_DÚO[carta.tipo]
 			else:
 				# Si podemos completar el dúo con esta carta, vale el punto del dúo
 				#  más el valor promedio que obtenemos de la carta robada
-				valor += 1.0 * self.BONUS_COMPLETAR_DUO
+				valor += 1.0 * self.COEF_COMPLETAR_DUO
 				if explorar:
 					valor += self._valorPromedioMazoEstimado()
 		elif carta.tipo == Carta.Tipo.BARCO:
 			if self._cantidadDeCartasDeTipoEnMano(carta.tipo) == 0:
 				# Si no tenemos una carta para completar el dúo, no vale nada
-				valor += 0.0 + self.VALOR_BASE_PRIMER_BARCO
+				valor += 0.0 + self.PLUS_PRIMER_DÚO[carta.tipo]
 			else:
 				# Si podemos completar el dúo con esta carta, vale el punto del dúo
 				#  más lo que sea mejor entre robar alguna carta del tope del descarte
 				#  o el valor promedio que obtenemos de robar del mazo
-				valor += 1.0 * self.BONUS_COMPLETAR_DUO
+				valor += 1.0 * self.COEF_COMPLETAR_DUO
 				if explorar:
 					valor += max(
 						self._valorPromedioMazoEstimado(),
@@ -436,32 +446,32 @@ class PuntosBotMk2(JugadorBase):
 		elif carta.tipo == Carta.Tipo.CANGREJO:
 			if self._cantidadDeCartasDeTipoEnMano(carta.tipo) == 0:
 				# Si no tenemos una carta para completar el dúo, no vale nada
-				valor += 0.0 + self.VALOR_BASE_PRIMER_CANGREJO
+				valor += 0.0 + self.PLUS_PRIMER_DÚO[carta.tipo]
 			else:
 				# Si podemos completar el dúo con esta carta, vale el punto del dúo
 				#  más el valor de la mejor carta que vimos entrar al descarte y estamos seguros
 				#  de que no se fue del descarte (por ser robada del descarte)
-				valor += 1.0 * self.BONUS_COMPLETAR_DUO
+				valor += 1.0 * self.COEF_COMPLETAR_DUO
 				if explorar:
 					valor += self._mejorValorDescarteEstimado()
 		elif carta.tipo == Carta.Tipo.NADADOR:
 			if self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.TIBURÓN) == 0:
 				# Si no tenemos una carta para completar el dúo, no vale nada
-				valor += 0.0 + self.VALOR_BASE_PRIMER_NADADORTIBURON
+				valor += 0.0 + self.PLUS_PRIMER_DÚO[carta.tipo]
 			else:
 				# Si podemos completar el dúo con esta carta, vale el punto del dúo
 				#  más el valor de la mejor carta que vimos entrar a la mano de algún jugador
-				valor += 1.0 * self.BONUS_COMPLETAR_DUO
+				valor += 1.0 * self.COEF_COMPLETAR_DUO
 				if explorar:
 					valor += self._mejorManoEstimadaAdversarios()[1]
 		elif carta.tipo == Carta.Tipo.TIBURÓN:
 			if self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.NADADOR) == 0:
 				# Si no tenemos una carta para completar el dúo, no vale nada
-				valor += 0.0 + self.VALOR_BASE_PRIMER_NADADORTIBURON
+				valor += 0.0 + self.PLUS_PRIMER_DÚO[carta.tipo]
 			else:
 				# Si podemos completar el dúo con esta carta, vale el punto del dúo
 				#  más el valor de la mejor carta que vimos entrar a la mano de algún jugador
-				valor += 1.0 * self.BONUS_COMPLETAR_DUO
+				valor += 1.0 * self.COEF_COMPLETAR_DUO
 				if explorar:
 					valor += self._mejorManoEstimadaAdversarios()[1]
 		elif carta.tipo == Carta.Tipo.SIRENA:
@@ -471,7 +481,7 @@ class PuntosBotMk2(JugadorBase):
 				valor += SIRENAS_INF
 			else:
 				# Si no, el valor es cuántas cartas tenemos de nuestro mejor color sin sirenas
-				valor += (self._cantidadDeCartasDeColorDescendientes() + [0,0,0])[cantidadDeSirenas] + self.VALOR_BASE_SIRENA
+				valor += (self._cantidadDeCartasDeColorDescendientes() + [0,0,0])[cantidadDeSirenas] + self.PLUS_SIRENA
 		
 		
 		return valor
