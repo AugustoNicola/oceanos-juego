@@ -6,7 +6,9 @@ from random import choice
 from juego.carta import Carta
 from juego.partida import PartidaDeOcéanos, SIRENAS_INF, cartasDelJuego
 from ..base import JugadorBase
+from jugador.registro import registrarComo
 
+@registrarComo("puntosbot_mk1")
 class PuntosBotMk1(JugadorBase):
 	# ========================= INTERFAZ DE JUEGO =========================
 	def __init__(self):

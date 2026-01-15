@@ -6,7 +6,9 @@ import re
 from juego.carta import Carta
 from juego.partida import PartidaDeOcéanos
 from jugador.base import JugadorBase
+from jugador.registro import registrarComo
 
+@registrarComo("jugador_cli")
 
 class JugadorCLI(JugadorBase):
 	# ========================= INTERFAZ DE JUEGO =========================

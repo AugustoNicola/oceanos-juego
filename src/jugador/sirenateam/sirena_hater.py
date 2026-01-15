@@ -5,7 +5,9 @@ from administrador.evento import Evento
 from juego.carta import Carta
 from juego.partida import PartidaDeOcéanos
 from ..base import JugadorBase
+from jugador.registro import registrarComo
 
+@registrarComo("sirena_hater")
 class SirenaHater(JugadorBase):
 	def __init__(self) -> None:
 		super().__init__()

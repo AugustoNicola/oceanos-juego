@@ -5,11 +5,7 @@ from .evento import Evento
 from .excepcion_esperando import ExcepciónEsperando
 from juego.carta import Carta
 from juego.partida import PartidaDeOcéanos, SIRENAS_INF
-from jugador.RandyBot.randy import RandyBot
-from jugador.CLI.cli import JugadorCLI
-from jugador.base import JugadorBase
-from jugador.PuntosBot.puntosbot_mk1 import PuntosBotMk1
-from jugador.PuntosBot.puntosbot_mk2 import PuntosBotMk2
+import jugador
 
 class AdministradorDeJuego():
 	class Verbosidad(Enum):
@@ -27,8 +23,8 @@ class AdministradorDeJuego():
 		if not verbosidad in AdministradorDeJuego.Verbosidad:
 			raise Exception("Usar el enum AdministradorDeJuego.Verbosidad")
 		
-		self._clasesDeJugadores = clasesDeJugadores
-		self._jugadores: list[JugadorBase] = [None] * len(clasesDeJugadores)
+		self._clasesDeJugadores = [jugador.registro.JUGADORES[nombreClase] for nombreClase in clasesDeJugadores]
+		self._jugadores: list[jugador.base.JugadorBase] = [None] * len(clasesDeJugadores)
 		self._juego = None
 		self._verbosidad = verbosidad
 		self._eventos = []
@@ -462,6 +458,6 @@ class AdministradorDeJuego():
 				self._cantidadDeCartasPorJugadorPorTipo[j][tipo] += cantidadDeCartasEnManoDeTipo[tipo] + cantidadDeCartasEnZonaDeDúosDeTipo[tipo]
 	
 if __name__ == '__main__':
-	administrador = AdministradorDeJuego([PuntosBotMk1, PuntosBotMk2], verbosidad=AdministradorDeJuego.Verbosidad.OMNISCIENTE)
+	administrador = AdministradorDeJuego(["puntosbot_mk1", "puntosbot_mk2"], verbosidad=AdministradorDeJuego.Verbosidad.OMNISCIENTE)
 	ganador = administrador.jugarPartida()
 	print(f"Ganador: {ganador}")
