@@ -123,6 +123,20 @@ class AdministradorDeJuego():
 			
 		return self._juego.jugadorGanador
 	
+	def obtenerEstadoPartida(self):
+		return {
+			"mazo": self._juego._mazo,
+			"descarte": self._juego._descarte,
+			"estadosDeJugadores": [self.obtenerEstadoJugador(númeroJugador) for númeroJugador in range(len(self._jugadores))],
+			"puntajes": self._juego.puntajes,
+			"deQuienEsTurno": self._juego.deQuiénEsTurno
+		}
+	def obtenerEstadoJugador(self, númeroJugador):
+		return {
+			"mano": [carta.aDiccionario() for carta, cantidad in self._juego._estadosDeJugadores[númeroJugador].mano.items() for _ in range(cantidad) ],
+			"duos": [(dúo[0].aDiccionario(), dúo[1].aDiccionario()) for dúo, cantidad in self._juego._estadosDeJugadores[númeroJugador].zonaDeDúos.items() for _ in range(cantidad) ]
+		}
+	
 	def _inicializarPartida(self):
 		self._juego = PartidaDeOcéanos(cantidadDeJugadores=len(self._jugadores))
 		for j in range(len(self._clasesDeJugadores)):
