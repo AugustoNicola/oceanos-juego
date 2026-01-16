@@ -165,13 +165,13 @@ def test_SiSeTieneUnDúo_AlJugarDúo_LasCartasDelDúoEstánEnLaZonaDeDúos():
 	
 	
 	juego.jugarDúoDeBarcos(Multiset([
-		Carta(Carta.Tipo.BARCO,Carta.Color.AZUL),
-		Carta(Carta.Tipo.BARCO,Carta.Color.AMARILLO)
+		Carta(Carta.Tipo.BARCO,Carta.Color.AMARILLO),
+		Carta(Carta.Tipo.BARCO,Carta.Color.AZUL)
 	]))
 	
 	assert juego._estadosDeJugadores[0].zonaDeDúos == Multiset([(
-		Carta(Carta.Tipo.BARCO,Carta.Color.AZUL),
-		Carta(Carta.Tipo.BARCO,Carta.Color.AMARILLO)
+		Carta(Carta.Tipo.BARCO,Carta.Color.AMARILLO),
+		Carta(Carta.Tipo.BARCO,Carta.Color.AZUL)
 	)])
 	
 	

@@ -140,6 +140,9 @@ class PartidaDeOcéanos():
 	def haTerminado(self):
 		return self._estadoActual == self.Estado.PARTIDA_TERMINADA
 	
+	def hayQueRobar(self):
+		return self._estadoActual == self.Estado.FASE_ROBO
+	
 	def seHaRobadoEsteTurno(self):
 		return self._estadoActual == self.Estado.FASE_DÚOS
 	

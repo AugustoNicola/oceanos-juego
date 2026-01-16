@@ -129,7 +129,8 @@ class AdministradorDeJuego():
 			"descarte": self._juego._descarte,
 			"estadosDeJugadores": [self.obtenerEstadoJugador(númeroJugador) for númeroJugador in range(len(self._jugadores))],
 			"puntajes": self._juego.puntajes,
-			"deQuienEsTurno": self._juego.deQuiénEsTurno
+			"deQuienEsTurno": self._juego.deQuiénEsTurno,
+			"fase": self._juego._estadoActual.name
 		}
 	def obtenerEstadoJugador(self, númeroJugador):
 		return {

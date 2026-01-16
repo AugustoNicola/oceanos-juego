@@ -5,3 +5,4 @@ import jugador.PuntosBot.puntosbot_mk2
 import jugador.RandyBot
 import jugador.SirenaTeam.sirena_enjoyer
 import jugador.SirenaTeam.sirena_hater
+import jugador.DecisionesCacheadas.decisiones_cacheadas
