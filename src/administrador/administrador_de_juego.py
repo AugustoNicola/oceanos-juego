@@ -1,13 +1,12 @@
+import sys
 from copy import copy, deepcopy
 from enum import Enum, auto
 from .acción import Acción
 from .evento import Evento
+from .excepcion_esperando import ExcepciónEsperando
 from juego.carta import Carta
 from juego.partida import PartidaDeOcéanos, SIRENAS_INF
-from jugador.RandyBot.randy import RandyBot
-from jugador.CLI.cli import JugadorCLI
-from jugador.base import JugadorBase
-from jugador.PuntosBot.puntosbot_mk1 import PuntosBotMk1
+import jugador
 
 class AdministradorDeJuego():
 	class Verbosidad(Enum):
@@ -15,15 +14,27 @@ class AdministradorDeJuego():
 		JUGADOR = auto()
 		OMNISCIENTE = auto()
 	
-	def __init__(self, clasesDeJugadores, verbosidad=Verbosidad.NADA):
+	class Fases(Enum):
+		INICIO_RONDA = auto()
+		ROBO = auto()
+		DUOS = auto()
+		FIN = auto()
+	
+	def __init__(self, nombresDeJugadores, verbosidad=Verbosidad.NADA, partidaActiva=False):
 		if not verbosidad in AdministradorDeJuego.Verbosidad:
 			raise Exception("Usar el enum AdministradorDeJuego.Verbosidad")
 		
-		self._clasesDeJugadores = clasesDeJugadores
-		self._jugadores: list[JugadorBase] = [None] * len(clasesDeJugadores)
+		self._clasesDeJugadores = [jugador.registro.JUGADORES[nombreClase] for nombreClase in nombresDeJugadores]
+		self._jugadores: list[jugador.base.JugadorBase] = [None] * len(nombresDeJugadores)
 		self._juego = None
 		self._verbosidad = verbosidad
 		self._eventos = []
+		
+		self._partidaActiva = partidaActiva
+		self._permisoParaSeguir = False
+		self._continuarEn = None
+		
+		self._noSeQuierenJugarMásDúos = False
 		
 		self._rondasTerminadas = 0
 		self._rondasTerminadasSinFinPorSirenas = 0
@@ -61,50 +72,117 @@ class AdministradorDeJuego():
 		} for _ in range(len(self._jugadores))]
 	
 	def jugarPartida(self):
-		self._juego = PartidaDeOcéanos(cantidadDeJugadores=len(self._jugadores))
-		for j in range(len(self._clasesDeJugadores)):
-			self._jugadores[j] = (self._clasesDeJugadores[j])()
-			self._jugadores[j].configurarParaJuego(self._juego, j, self._eventos)
+		self._inicializarPartida()
 		
 		while not self._juego.haTerminado():
-			self._eventos.clear()
-			
-			self._juego.iniciarRonda()
-			if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
-				print("~~~~~~~~~~~~~~~~~~~~~ Inicia Ronda ~~~~~~~~~~~~~~~~~~~~~~")
-				print(f"Jugador inicial: {self._juego.deQuiénEsTurno}")
-				print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-			
-			for j in range(len(self._jugadores)):
-				self._jugadores[j].configurarInicioDeRonda(self._juego.topeDelDescarte)
+			self._inicializarRonda()
 
 			while self._juego.rondaEnCurso():
-				if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
-					print(f"~~~~~~~~~~~~~~~~~~~ Turno del jugador {self._juego.deQuiénEsTurno} ~~~~~~~~~~~~~~~~~~~~")
-					print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-					if self._verbosidad == AdministradorDeJuego.Verbosidad.OMNISCIENTE:
-						print(f"El descarte 0 es {(self._juego._descarte[0])}")
-						print(f"El descarte 1 es {(self._juego._descarte[1])}")
-					elif self._verbosidad == AdministradorDeJuego.Verbosidad.JUGADOR:
-						print(f"El tope del descarte 0 es {(self._juego.topeDelDescarte[0])}")
-						print(f"El tope del descarte 1 es {(self._juego.topeDelDescarte[1])}")
-				
-				self._jugadores[self._juego.deQuiénEsTurno].configurarInicioDeTurno()
-				
+				self._faseInicioTurno()
 				self._faseDeRobo()
 				self._faseDeDúos()
 				self._faseDeFin()
 			
 			self._finDeRonda()
 		
-		self._partidasGanadasPorJugador[self._juego.jugadorGanador] += 1
-		if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
-			print("!!!!!!!!!!!!!!!!!!! Partida Terminada !!!!!!!!!!!!!!!!!!!")
-			print(f"Ganador: {self._juego.jugadorGanador}")
-			print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+		self._finDePartida()
 		return self._juego.jugadorGanador
 	
+	def continuar(self):
+		self._permisoParaSeguir = True
+		buscandoPuntoDeContinuar = self._continuarEn != None
+		
+		try:
+			if not buscandoPuntoDeContinuar:
+				self._inicializarPartida()
+			
+			while not self._juego.haTerminado():
+				if not buscandoPuntoDeContinuar or self._continuarEn == self.Fases.INICIO_RONDA:
+					buscandoPuntoDeContinuar = False
+					self._inicializarRonda()
+					
+
+				while self._juego.rondaEnCurso():
+					if not buscandoPuntoDeContinuar:
+						self._faseInicioTurno()
+					if not buscandoPuntoDeContinuar or self._continuarEn == self.Fases.ROBO:
+						buscandoPuntoDeContinuar = False
+						self._faseDeRobo()
+					if not buscandoPuntoDeContinuar or self._continuarEn == self.Fases.DUOS:
+						buscandoPuntoDeContinuar = False
+						self._faseDeDúos()
+					if not buscandoPuntoDeContinuar or self._continuarEn == self.Fases.FIN:
+						buscandoPuntoDeContinuar = False
+						self._faseDeFin()
+				
+				self._finDeRonda()
+			
+			self._finDePartida()
+		except ExcepciónEsperando as e:
+			print(f"Esperando en {e}")
+			return None
+			
+		return self._juego.jugadorGanador
+	
+	def obtenerEstadoPartida(self):
+		return {
+			"mazo": self._juego._mazo,
+			"descarte": self._juego._descarte,
+			"estadosDeJugadores": [self.obtenerEstadoJugador(númeroJugador) for númeroJugador in range(len(self._jugadores))],
+			"puntajes": self._juego.puntajes,
+			"puntajesRonda": [self._juego._estadosDeJugadores[j].puntajeDeRonda() for j in range(len(self._jugadores))],
+			"deQuienEsTurno": self._juego.deQuiénEsTurno,
+			"últimaChanceEnCurso": self._juego.últimaChanceEnCurso(),
+			"fase": self._juego._estadoActual.name
+		}
+	def obtenerEstadoJugador(self, númeroJugador):
+		return {
+			"mano": [carta.aDiccionario() for carta, cantidad in self._juego._estadosDeJugadores[númeroJugador].mano.items() for _ in range(cantidad) ],
+			"duos": [(dúo[0].aDiccionario(), dúo[1].aDiccionario()) for dúo, cantidad in self._juego._estadosDeJugadores[númeroJugador].zonaDeDúos.items() for _ in range(cantidad) ]
+		}
+	
+	def _inicializarPartida(self):
+		self._juego = PartidaDeOcéanos(cantidadDeJugadores=len(self._jugadores))
+		for j in range(len(self._clasesDeJugadores)):
+			self._jugadores[j] = (self._clasesDeJugadores[j])()
+			self._jugadores[j].configurarParaJuego(self._juego, j, self._eventos)
+	
+	def _inicializarRonda(self):
+		if self._partidaActiva and not self._permisoParaSeguir:
+			self._continuarEn = self.Fases.INICIO_RONDA
+			raise ExcepciónEsperando("INICIO_RONDA")
+		self._permisoParaSeguir = False
+		
+		self._eventos.clear()
+				
+		self._juego.iniciarRonda()
+		if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
+			print("~~~~~~~~~~~~~~~~~~~~~ Inicia Ronda ~~~~~~~~~~~~~~~~~~~~~~")
+			print(f"Jugador inicial: {self._juego.deQuiénEsTurno}")
+			print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+				
+		for j in range(len(self._jugadores)):
+			self._jugadores[j].configurarInicioDeRonda(self._juego.topeDelDescarte)
+	
+	def _faseInicioTurno(self):
+		if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
+			print(f"~~~~~~~~~~~~~~~~~~~ Turno del jugador {self._juego.deQuiénEsTurno} ~~~~~~~~~~~~~~~~~~~~")
+			print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+			if self._verbosidad == AdministradorDeJuego.Verbosidad.OMNISCIENTE:
+				print(f"El descarte 0 es {(self._juego._descarte[0])}")
+				print(f"El descarte 1 es {(self._juego._descarte[1])}")
+			elif self._verbosidad == AdministradorDeJuego.Verbosidad.JUGADOR:
+				print(f"El tope del descarte 0 es {(self._juego.topeDelDescarte[0])}")
+				print(f"El tope del descarte 1 es {(self._juego.topeDelDescarte[1])}")
+		
+		self._jugadores[self._juego.deQuiénEsTurno].configurarInicioDeTurno()
+	
 	def _faseDeRobo(self):
+		if self._partidaActiva and not self._permisoParaSeguir:
+			self._continuarEn = self.Fases.ROBO
+			raise ExcepciónEsperando("ROBO")
+		self._permisoParaSeguir = False
+		
 		acciónDeRobo = self._jugadores[self._juego.deQuiénEsTurno].decidirAcciónDeRobo()
 		
 		if acciónDeRobo == Acción.Robo.DEL_MAZO:
@@ -116,7 +194,8 @@ class AdministradorDeJuego():
 			self._eventos.append(Evento(self._juego.deQuiénEsTurno, Acción.Robo.DEL_MAZO,
 				{
 					"cartaDescartada": copy(self._juego.topeDelDescarte[indiceDePilaDondeDescartar]) if len(opcionesDeRobo) > 1 else None,
-					"pilaDondeDescartó": indiceDePilaDondeDescartar if len(opcionesDeRobo) > 1 else None
+					"pilaDondeDescartó": indiceDePilaDondeDescartar if len(opcionesDeRobo) > 1 else None,
+					"_cartaRobada": cartaRobada # ! SOLO VER SI FUISTE EL JUGADOR QUE ROBÓ!!!
 				}
 			))
 			if self._verbosidad == AdministradorDeJuego.Verbosidad.OMNISCIENTE:
@@ -155,23 +234,28 @@ class AdministradorDeJuego():
 			raise Exception("Error")
 
 	def _faseDeDúos(self):
-		noSeQuierenJugarMásDúos = False
+		self._noSeQuierenJugarMásDúos = False
 		
-		while not noSeQuierenJugarMásDúos and not self._juego.haTerminado():
+		while not self._noSeQuierenJugarMásDúos and not self._juego.haTerminado():
+			if self._partidaActiva and not self._permisoParaSeguir:
+				self._continuarEn = self.Fases.DUOS
+				raise ExcepciónEsperando("DUOS")
+			self._permisoParaSeguir = False
+			
 			(acciónDeDúos, cartasAJugar, parametrosDelDúo) = self._jugadores[self._juego.deQuiénEsTurno].decidirAcciónDeDúos()
 			if acciónDeDúos == Acción.Dúos.JUGAR_PECES:
 				# Jugar dúo de peces
-				self._eventos.append(Evento(self._juego.deQuiénEsTurno, acciónDeDúos,
-					{
-						"cartasJugadas": deepcopy(sorted(cartasAJugar.elements()))
-					}
-				))
-				
 				cartaRobada = self._juego.jugarDúoDePeces(cartasAJugar)
 				if self._verbosidad == AdministradorDeJuego.Verbosidad.OMNISCIENTE:
 					print(f"Juega un dúo de {list(cartasAJugar.elements())[0]} y {list(cartasAJugar.elements())[1]} y roba una {cartaRobada} del mazo")
 				elif self._verbosidad == AdministradorDeJuego.Verbosidad.JUGADOR:
 					print(f"Juega un dúo de {list(cartasAJugar.elements())[0]} y {list(cartasAJugar.elements())[1]} y roba una carta del mazo")
+				self._eventos.append(Evento(self._juego.deQuiénEsTurno, acciónDeDúos,
+					{
+						"cartasJugadas": deepcopy(sorted(cartasAJugar.elements())),
+						"_cartaRobada": cartaRobada # ! SOLO VER SI FUISTE EL JUGADOR QUE JUGÓ EL DÚO!!!
+					}
+				))
 				
 			elif acciónDeDúos == Acción.Dúos.JUGAR_BARCOS:
 				# Jugar dúo de barcos
@@ -187,25 +271,26 @@ class AdministradorDeJuego():
 				if self._juego.rondaEnCurso():
 					self._faseDeRobo()
 					self._faseDeDúos()
-				noSeQuierenJugarMásDúos = True
+				self._noSeQuierenJugarMásDúos = True
 				
 			elif acciónDeDúos == Acción.Dúos.JUGAR_CANGREJOS:
 				# Jugar dúo de cangrejos
 				pilaDeDescarteARobar = parametrosDelDúo[0]
 				indiceDeCartaARobar = self._jugadores[self._juego.deQuiénEsTurno].decidirQuéRobarConDúoDeCangrejos(deepcopy(self._juego._descarte[pilaDeDescarteARobar]))
 				
-				self._eventos.append(Evento(self._juego.deQuiénEsTurno, acciónDeDúos,
-					{
-						"cartasJugadas": deepcopy(sorted(cartasAJugar.elements())),
-						"pilaDondeRobó": pilaDeDescarteARobar
-					}
-				))
-				
 				cartaRobada = self._juego.jugarDúoDeCangrejos(cartasAJugar, pilaDeDescarteARobar, indiceDeCartaARobar)
 				if self._verbosidad == AdministradorDeJuego.Verbosidad.OMNISCIENTE:
 					print(f"Juega un dúo de {list(cartasAJugar.elements())[0]} y {list(cartasAJugar.elements())[1]} para robar una {cartaRobada} de la pila {pilaDeDescarteARobar}")
 				elif self._verbosidad == AdministradorDeJuego.Verbosidad.JUGADOR:
 					print(f"Juega un dúo de {list(cartasAJugar.elements())[0]} y {list(cartasAJugar.elements())[1]} para robar una carta de la pila {pilaDeDescarteARobar}")
+				
+				self._eventos.append(Evento(self._juego.deQuiénEsTurno, acciónDeDúos,
+					{
+						"cartasJugadas": deepcopy(sorted(cartasAJugar.elements())),
+						"pilaDondeRobó": pilaDeDescarteARobar,
+						"_cartaRobada": cartaRobada # ! SOLO VER SI FUISTE EL JUGADOR QUE JUGÓ EL DÚO!!!
+					}
+				))
 				
 			elif acciónDeDúos == Acción.Dúos.JUGAR_NADADOR_Y_TIBURÓN:
 				# Jugar dúo de nadador y tiburón
@@ -216,7 +301,7 @@ class AdministradorDeJuego():
 					{
 						"cartasJugadas": deepcopy(sorted(cartasAJugar.elements())),
 						"jugadorRobado": jugadorARobar,
-						"cartaRobada": cartaRobada # ! SOLO VER SI FUISTE EL JUGADOR ROBADO!!!
+						"_cartaRobada": cartaRobada # ! SOLO VER SI FUISTE EL JUGADOR ROBADO!!!
 					}
 				))
 				if self._verbosidad == AdministradorDeJuego.Verbosidad.OMNISCIENTE:
@@ -226,27 +311,75 @@ class AdministradorDeJuego():
 				
 			elif acciónDeDúos == Acción.Dúos.NO_JUGAR:
 				# No jugar dúos
-				noSeQuierenJugarMásDúos = True
-				
+				self._noSeQuierenJugarMásDúos = True
+				self._permisoParaSeguir = True
 			else:
 				#! ERROR
 				raise Exception("Error")
 
 	def _faseDeFin(self):
 		if not self._juego.haTerminado() and self._juego.rondaEnCurso():
+			
+			if self._partidaActiva and not self._permisoParaSeguir:
+				self._continuarEn = self.Fases.FIN
+				raise ExcepciónEsperando("FIN")
+			self._permisoParaSeguir = False
+			
 			acciónDeFinDeTurno = self._jugadores[self._juego.deQuiénEsTurno].decidirAcciónDeFinDeTurno()
-			self._eventos.append(Evento(self._juego.deQuiénEsTurno, acciónDeFinDeTurno, None))
+			
+			self._eventos.append(Evento(self._juego.deQuiénEsTurno, acciónDeFinDeTurno, {
+				"puntajesRonda": [ int(self._juego._estadosDeJugadores[j].puntajeDeRonda()) for j in range(len(self._jugadores))]
+			}))
+			
+			cuerpoEventoFin = {}
+			jugadorEventoFin = self._juego.deQuiénEsTurno
 			
 			if acciónDeFinDeTurno == Acción.FinDeTurno.PASAR_TURNO:
 				# Pasar el turno normalmente				
 				self._juego.pasarTurno()
 				if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
 					print("Pasa de turno")
+				if self._juego.rondaEnCurso():
+					# turno terminado normalmente, la ronda continúa
+					cuerpoEventoFin = {
+						"estadoRonda": "EN_CURSO"
+					}
+				elif self._juego.rondaAnulada():
+					# ronda anulada por mazo vacío
+					cuerpoEventoFin = {
+						"estadoRonda": "ANULADA_MAZO_VACÍO"
+					}
+					pass
+				elif self._juego.últimaChanceGanada() != None:
+					# ronda terminada por última chance
+					
+					puntajesRonda = [0 for _ in range(len(self._jugadores))]
+					
+					for j in range(len(self._jugadores)):
+						if self._juego.últimaChanceGanada():
+							if j == self._juego.jugadorQueDijoÚltimaChance:
+								puntajesRonda[j] = self._juego._estadosDeJugadores[j].puntajeDeRonda() + self._juego._estadosDeJugadores[j]._bonificacionPorColor()
+							else:
+								puntajesRonda[j] = self._juego._estadosDeJugadores[j]._bonificacionPorColor()
+						else:
+							if j == self._juego.jugadorQueDijoÚltimaChance:
+								puntajesRonda[j] = self._juego._estadosDeJugadores[j]._bonificacionPorColor()
+							else:
+								puntajesRonda[j] = self._juego._estadosDeJugadores[j].puntajeDeRonda()
+					
+					cuerpoEventoFin = {
+						"estadoRonda": "ÚLTIMA_CHANCE_GANADA" if self._juego.últimaChanceGanada() else "ÚLTIMA_CHANCE_PERDIDA",
+						"puntajesRonda":  puntajesRonda
+					}
+				
 			elif acciónDeFinDeTurno == Acción.FinDeTurno.DECIR_BASTA:
 				# Decir basta y terminar la ronda
 				self._juego.decirBasta()
 				if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
 					print("¡¡¡Basta!!!")
+				cuerpoEventoFin = {
+					"puntajesRonda": [ int(self._juego._estadosDeJugadores[j].puntajeDeRonda()) for j in range(len(self._jugadores))]
+				}
 			elif acciónDeFinDeTurno == Acción.FinDeTurno.DECIR_ÚLTIMA_CHANCE:
 				# Decir última chance y pasar el turno
 				self._juego.decirÚltimaChance()
@@ -255,8 +388,10 @@ class AdministradorDeJuego():
 			else:
 				#! ERROR
 				raise Exception("Error")
+		
+			self._eventos.append(Evento(jugadorEventoFin, acciónDeFinDeTurno, cuerpoEventoFin))
 	
-	def _finDeRonda(self):
+	def _finDeRonda(self):		
 		self._rondasTerminadas += 1
 		if max(self._juego.puntajes) == SIRENAS_INF:
 			self._motivosFinDeRonda["4_SIRENAS"] += 1
@@ -341,8 +476,13 @@ class AdministradorDeJuego():
 			self._juego._deQuiénEsTurno = j
 			self._jugadores[j].configurarFinDeRonda(manos, puntajesDeRonda)
 		self._juego._deQuiénEsTurno = quiénArranca
-		
-		self._eventos.clear()
+	
+	def _finDePartida(self):
+		self._partidasGanadasPorJugador[self._juego.jugadorGanador] += 1
+		if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
+			print("!!!!!!!!!!!!!!!!!!! Partida Terminada !!!!!!!!!!!!!!!!!!!")
+			print(f"Ganador: {self._juego.jugadorGanador}")
+			print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	
 	def _calcularEstadísticasDeRonda(self):
 		for j in range(len(self._jugadores)):
@@ -380,6 +520,7 @@ class AdministradorDeJuego():
 				self._cantidadDeCartasPorJugadorPorTipo[j][tipo] += cantidadDeCartasEnManoDeTipo[tipo] + cantidadDeCartasEnZonaDeDúosDeTipo[tipo]
 	
 if __name__ == '__main__':
-	administrador = AdministradorDeJuego([JugadorCLI, PuntosBotMk1], verbosidad=AdministradorDeJuego.Verbosidad.JUGADOR)
+	#administrador = AdministradorDeJuego(["puntosbot_mk1", "puntosbot_mk2"], verbosidad=AdministradorDeJuego.Verbosidad.OMNISCIENTE)
+	administrador = AdministradorDeJuego(sys.argv[1:], verbosidad=AdministradorDeJuego.Verbosidad.OMNISCIENTE)
 	ganador = administrador.jugarPartida()
 	print(f"Ganador: {ganador}")

@@ -4,7 +4,9 @@ from juego.carta import Carta
 from juego.partida import PartidaDeOcéanos
 from administrador.evento import Evento
 from ..base import JugadorBase
+from jugador.registro import registrarComo
 
+@registrarComo("CAMBIAR_ESTE_NOMBRE")
 class EjemploDeBot(JugadorBase):
 	# ========================= INTERFAZ DE JUEGO =========================
 	def __init__(self) -> None:

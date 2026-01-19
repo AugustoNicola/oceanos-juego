@@ -6,33 +6,33 @@ class CartaInvalidaException(Exception):
 
 class Carta():
 	class Tipo(Enum):
-		CANGREJO = auto()
-		BARCO = auto()
-		PEZ = auto()
-		NADADOR = auto()
-		TIBURÓN = auto()
-		CONCHA = auto()
-		PULPO = auto()
-		PINGUINO = auto()
-		ANCLA = auto()
-		COLONIA = auto()
-		FARO = auto()
-		CARDUMEN = auto()
-		CAPITÁN = auto()
-		SIRENA = auto()
+		CANGREJO = "CANGREJO"
+		BARCO = "BARCO"
+		PEZ = "PEZ"
+		NADADOR = "NADADOR"
+		TIBURÓN = "TIBURÓN"
+		CONCHA = "CONCHA"
+		PULPO = "PULPO"
+		PINGUINO = "PINGUINO"
+		ANCLA = "ANCLA"
+		COLONIA = "COLONIA"
+		FARO = "FARO"
+		CARDUMEN = "CARDUMEN"
+		CAPITÁN = "CAPITÁN"
+		SIRENA = "SIRENA"
 	
 	class Color(Enum):
-		AZUL = auto()
-		CELESTE = auto()
-		NEGRO = auto()
-		AMARILLO = auto()
-		VERDE = auto()
-		BLANCO = auto()
-		VIOLETA = auto()
-		GRIS = auto()
-		NARANJA_CLARO = auto()
-		ROSA = auto()
-		NARANJA = auto()
+		AZUL = "AZUL"
+		CELESTE = "CELESTE"
+		NEGRO = "NEGRO"
+		AMARILLO = "AMARILLO"
+		VERDE = "VERDE"
+		BLANCO = "BLANCO"
+		VIOLETA = "VIOLETA"
+		GRIS = "GRIS"
+		NARANJA_CLARO = "NARANJA_CLARO"
+		ROSA = "ROSA"
+		NARANJA = "NARANJA"
 	
 	
 	def __init__(self, tipo, color):
@@ -83,6 +83,9 @@ class Carta():
 	
 	def __hash__(self):
 		return hash((self.tipo, self.color))
+	
+	def aDiccionario(self):
+		return {'tipo': self.tipo.value, 'color': self.color.value}
 
 apodosCartas = {
 	Carta.Tipo.CANGREJO: "Cjo",

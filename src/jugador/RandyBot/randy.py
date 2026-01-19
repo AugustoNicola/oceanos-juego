@@ -5,7 +5,9 @@ from administrador.evento import Evento
 from juego.carta import Carta
 from juego.partida import PartidaDeOcéanos
 from ..base import JugadorBase
+from jugador.registro import registrarComo
 
+@registrarComo("randybot")
 class RandyBot(JugadorBase):
 	def __init__(self):
 		super().__init__()

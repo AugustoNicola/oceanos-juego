@@ -23,3 +23,10 @@ class Evento:
 	
 	def __repr__(self):
 		return f"({self._jugador}, {self._acción}, {self._parámetros})"
+	
+	def aDiccionario(self):
+		return {
+			"jugador": self._jugador,
+			"acción": self._acción.value,
+			"parámetros": self._parámetros
+		}
