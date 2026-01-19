@@ -3,6 +3,7 @@ import uuid
 
 from backend.estado import PARTIDAS, JUGADORES_ACTIVOS, LOCKS
 from administrador.administrador_de_juego import AdministradorDeJuego
+from jugador.registro import JUGADORES
 from jugador.DecisionesCacheadas.decisiones_cacheadas import JugadorDecisionesCacheadas
 from administrador.acción import Acción
 from juego.carta import Carta
@@ -10,6 +11,12 @@ from collections import Counter as Multiset
 
 router = APIRouter()
 
+
+@router.get("/jugadores")
+def obtenerJugadores():
+    return {
+        "jugadores": list(JUGADORES.keys())
+    }
 
 @router.post("/crear_partida")
 def crearPartida(request: dict):
@@ -39,7 +46,8 @@ def ok(idPartida: str):
         partida.continuar()
         return {
             "id_partida": idPartida,
-            "estado": partida.obtenerEstadoPartida()
+            "estado": partida.obtenerEstadoPartida(),
+            "evento": partida._eventos[-1].aDiccionario() if len(partida._eventos) > 0 else None
         }
 
 @router.post("/partida/{idPartida}/accion_robo")
@@ -70,10 +78,11 @@ def acciónRobo(idPartida: str, request: dict):
         partida.continuar()
         return {
             "id_partida": idPartida,
-            "estado": partida.obtenerEstadoPartida()
+            "estado": partida.obtenerEstadoPartida(),
+            "evento": partida._eventos[-1].aDiccionario() if len(partida._eventos) > 0 else None
         }
 
-@router.post("/partida/{idPartida}/accion_duos")
+@router.post("/partida/{idPartida}/accion_duos_o_fin")
 def acciónDúos(idPartida: str, request: dict):
     partida = PARTIDAS.get(idPartida)
     if not partida:
@@ -81,36 +90,47 @@ def acciónDúos(idPartida: str, request: dict):
     with LOCKS[idPartida]:
         if partida._juego.deQuiénEsTurno != JUGADORES_ACTIVOS[idPartida]:
             raise HTTPException(400, "¡No es tu turno!")
-        if not partida._juego.seHaRobadoEsteTurno():
+        if partida._juego.hayQueTomarDecisionesDeRoboDelMazo() or not partida._juego.seHaRobadoEsteTurno():
             raise HTTPException(400, "¡No es hora de jugar dúos!")
         
         # * cachear estado
         jugador: JugadorDecisionesCacheadas = partida._jugadores[JUGADORES_ACTIVOS[idPartida]]
-        if request["acción_dúos_elegida"] == "no":
-            # no jugar dúos
+        if request["acción_elegida"] in ["pasar", "basta", "última_chance"]:
+            # no jugar dúos, terminar turno
             jugador.acciónDeDúos = Acción.Dúos.NO_JUGAR
             jugador.cartasDeDúoAJugar = None
             jugador.parámetrosDeDúo = None
+            
+            if request["acción_elegida"] == "pasar":
+                # pasar de turno
+                jugador.acciónDeFinDeTurno = Acción.FinDeTurno.PASAR_TURNO
+            elif request["acción_elegida"] == "basta":
+                # decir ¡Basta!
+                jugador.acciónDeFinDeTurno = Acción.FinDeTurno.DECIR_BASTA
+            elif request["acción_elegida"] == "última_chance":
+                # decir ¡Última Chance!
+                jugador.acciónDeFinDeTurno = Acción.FinDeTurno.DECIR_ÚLTIMA_CHANCE
+            
         else:
             # jugamos algún dúo
             jugador.cartasDeDúoAJugar = Multiset([
-                Carta(request["cartas_jugadas"][0].tipo, request["cartas_jugadas"][0].color),
-                Carta(request["cartas_jugadas"][1].tipo, request["cartas_jugadas"][1].color)
+                Carta(Carta.Tipo(request["cartas_jugadas"][0]["tipo"]), Carta.Color(request["cartas_jugadas"][0]["color"])),
+                Carta(Carta.Tipo(request["cartas_jugadas"][1]["tipo"]), Carta.Color(request["cartas_jugadas"][1]["color"]))
             ])
-            if request["acción_dúos_elegida"] == "pez":
+            if request["acción_elegida"] == "dúo_peces":
                 # jugar dúo de peces
                 jugador.acciónDeDúos = Acción.Dúos.JUGAR_PECES
                 jugador.parámetrosDeDúo = None
-            elif request["acción_dúos_elegida"] == "barco":
+            elif request["acción_elegida"] == "dúo_barcos":
                 # jugar dúo de barcos
                 jugador.acciónDeDúos = Acción.Dúos.JUGAR_BARCOS
                 jugador.parámetrosDeDúo = None
-            elif request["acción_dúos_elegida"] == "cangrejo":
+            elif request["acción_elegida"] == "dúo_cangrejos":
                 # jugar dúo de cangrejos
                 jugador.acciónDeDúos = Acción.Dúos.JUGAR_CANGREJOS
                 jugador.parámetrosDeDúo = [request["pila_descarte_elegida"]]
                 jugador.cartaElegidaParaRobarConDúoDeCangrejo = request["carta_descarte_robada"]
-            elif request["acción_dúos_elegida"] == "nadador_tiburón":
+            elif request["acción_elegida"] == "dúo_nadador_tiburón":
                 # jugar dúo de nadador y tiburón
                 jugador.acciónDeDúos = Acción.Dúos.JUGAR_NADADOR_Y_TIBURÓN
                 jugador.parámetrosDeDúo = [request["jugador_elegido"]]
@@ -118,10 +138,12 @@ def acciónDúos(idPartida: str, request: dict):
                 raise HTTPException(400, "¡Opción inválida!")
         
         # * continuar la partida, con decisiones ya elegidas
+        # * esto va a superar una fase de dúos y una fase de fin
         partida.continuar()
         return {
             "id_partida": idPartida,
-            "estado": partida.obtenerEstadoPartida()
+            "estado": partida.obtenerEstadoPartida(),
+            "evento": partida._eventos[-1].aDiccionario() if len(partida._eventos) > 0 else None
         }
 
 @router.post("/partida/{idPartida}/accion_fin")
@@ -153,5 +175,6 @@ def acciónFin(idPartida: str, request: dict):
         partida.continuar()
         return {
             "id_partida": idPartida,
-            "estado": partida.obtenerEstadoPartida()
+            "estado": partida.obtenerEstadoPartida(),
+            "evento": partida._eventos[-1].aDiccionario() if len(partida._eventos) > 0 else None
         }

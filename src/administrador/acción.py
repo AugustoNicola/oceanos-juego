@@ -2,19 +2,19 @@ from enum import Enum, auto
 
 class Acción():
 	class Robo(Enum):
-		DEL_MAZO = auto()
-		DEL_DESCARTE_0 = auto()
-		DEL_DESCARTE_1 = auto()
+		DEL_MAZO = "ROBO_DEL_MAZO"
+		DEL_DESCARTE_0 = "ROBO_DEL_DESCARTE_0"
+		DEL_DESCARTE_1 = "ROBO_DEL_DESCARTE_1"
 	
 	class Dúos(Enum):
-		JUGAR_PECES = auto()
-		JUGAR_BARCOS = auto()
-		JUGAR_CANGREJOS = auto()
-		JUGAR_NADADOR_Y_TIBURÓN = auto()
-		NO_JUGAR = auto()
+		JUGAR_PECES = "DÚO_JUGAR_PECES"
+		JUGAR_BARCOS = "DÚO_JUGAR_BARCOS"
+		JUGAR_CANGREJOS = "DÚO_JUGAR_CANGREJOS"
+		JUGAR_NADADOR_Y_TIBURÓN = "DÚO_JUGAR_NADADOR_Y_TIBURON"
+		NO_JUGAR = "DÚO_NO_JUGAR"
 	
 	class FinDeTurno(Enum):
-		PASAR_TURNO = auto()
-		DECIR_BASTA = auto()
-		DECIR_ÚLTIMA_CHANCE = auto()
-			
+		PASAR_TURNO = "FIN_PASAR_TURNO"
+		DECIR_BASTA = "FIN_DECIR_BASTA"
+		DECIR_ÚLTIMA_CHANCE = "FIN_DECIR_ULTIMA_CHANCE"
+	

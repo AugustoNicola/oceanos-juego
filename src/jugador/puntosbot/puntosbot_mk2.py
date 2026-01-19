@@ -377,9 +377,9 @@ class PuntosBotMk2(JugadorBase):
 				if (
 					evento.acción == Acción.Dúos.JUGAR_NADADOR_Y_TIBURÓN and
 					evento.parámetros["jugadorRobado"] == self._númeroDeJugador and
-					evento.parámetros["cartaRobada"] != None
+					evento.parámetros["_cartaRobada"] != None
 				):
-					self._manosEstimadas[evento.jugador][evento.parámetros["cartaRobada"]] += 1
+					self._manosEstimadas[evento.jugador][evento.parámetros["_cartaRobada"]] += 1
 			
 			self._primerEventoNoLeído += 1
 		
