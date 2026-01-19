@@ -30,7 +30,10 @@ def crearPartida(request: dict):
     
     # comenzar partida, esperamos en ROBO
     partida = PARTIDAS[idPartida]
-    partida.continuar()
+    try:
+        partida.continuar()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) 
     
     return {
         "id_partida": idPartida,
@@ -43,7 +46,10 @@ def ok(idPartida: str):
     if not partida:
         raise HTTPException(404, "Partida no encontrada")
     with LOCKS[idPartida]:
-        partida.continuar()
+        try:
+            partida.continuar()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e)) 
         return {
             "id_partida": idPartida,
             "estado": partida.obtenerEstadoPartida(),
@@ -75,7 +81,10 @@ def acciónRobo(idPartida: str, request: dict):
             raise HTTPException(400, "¡Opción inválida!")
         
         # * continuar la partida, con decisiones ya elegidas
-        partida.continuar()
+        try:
+            partida.continuar()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e)) 
         return {
             "id_partida": idPartida,
             "estado": partida.obtenerEstadoPartida(),
@@ -139,7 +148,10 @@ def acciónDúos(idPartida: str, request: dict):
         
         # * continuar la partida, con decisiones ya elegidas
         # * esto va a superar una fase de dúos y una fase de fin
-        partida.continuar()
+        try:
+            partida.continuar()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e)) 
         return {
             "id_partida": idPartida,
             "estado": partida.obtenerEstadoPartida(),
@@ -172,7 +184,10 @@ def acciónFin(idPartida: str, request: dict):
             raise HTTPException(400, "¡Opción inválida!")
         
         # * continuar la partida, con decisiones ya elegidas
-        partida.continuar()
+        try:
+            partida.continuar()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e)) 
         return {
             "id_partida": idPartida,
             "estado": partida.obtenerEstadoPartida(),
