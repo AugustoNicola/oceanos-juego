@@ -1,3 +1,4 @@
+import sys
 from copy import copy, deepcopy
 from enum import Enum, auto
 from .acción import Acción
@@ -19,12 +20,12 @@ class AdministradorDeJuego():
 		DUOS = auto()
 		FIN = auto()
 	
-	def __init__(self, clasesDeJugadores, verbosidad=Verbosidad.NADA, partidaActiva=False):
+	def __init__(self, nombresDeJugadores, verbosidad=Verbosidad.NADA, partidaActiva=False):
 		if not verbosidad in AdministradorDeJuego.Verbosidad:
 			raise Exception("Usar el enum AdministradorDeJuego.Verbosidad")
 		
-		self._clasesDeJugadores = [jugador.registro.JUGADORES[nombreClase] for nombreClase in clasesDeJugadores]
-		self._jugadores: list[jugador.base.JugadorBase] = [None] * len(clasesDeJugadores)
+		self._clasesDeJugadores = [jugador.registro.JUGADORES[nombreClase] for nombreClase in nombresDeJugadores]
+		self._jugadores: list[jugador.base.JugadorBase] = [None] * len(nombresDeJugadores)
 		self._juego = None
 		self._verbosidad = verbosidad
 		self._eventos = []
@@ -194,7 +195,7 @@ class AdministradorDeJuego():
 				{
 					"cartaDescartada": copy(self._juego.topeDelDescarte[indiceDePilaDondeDescartar]) if len(opcionesDeRobo) > 1 else None,
 					"pilaDondeDescartó": indiceDePilaDondeDescartar if len(opcionesDeRobo) > 1 else None,
-					"_cartaRobada": cartaRobada
+					"_cartaRobada": cartaRobada # ! SOLO VER SI FUISTE EL JUGADOR QUE ROBÓ!!!
 				}
 			))
 			if self._verbosidad == AdministradorDeJuego.Verbosidad.OMNISCIENTE:
@@ -252,7 +253,7 @@ class AdministradorDeJuego():
 				self._eventos.append(Evento(self._juego.deQuiénEsTurno, acciónDeDúos,
 					{
 						"cartasJugadas": deepcopy(sorted(cartasAJugar.elements())),
-						"_cartaRobada": cartaRobada
+						"_cartaRobada": cartaRobada # ! SOLO VER SI FUISTE EL JUGADOR QUE JUGÓ EL DÚO!!!
 					}
 				))
 				
@@ -287,7 +288,7 @@ class AdministradorDeJuego():
 					{
 						"cartasJugadas": deepcopy(sorted(cartasAJugar.elements())),
 						"pilaDondeRobó": pilaDeDescarteARobar,
-						"_cartaRobada": cartaRobada
+						"_cartaRobada": cartaRobada # ! SOLO VER SI FUISTE EL JUGADOR QUE JUGÓ EL DÚO!!!
 					}
 				))
 				
@@ -519,6 +520,7 @@ class AdministradorDeJuego():
 				self._cantidadDeCartasPorJugadorPorTipo[j][tipo] += cantidadDeCartasEnManoDeTipo[tipo] + cantidadDeCartasEnZonaDeDúosDeTipo[tipo]
 	
 if __name__ == '__main__':
-	administrador = AdministradorDeJuego(["puntosbot_mk1", "puntosbot_mk2"], verbosidad=AdministradorDeJuego.Verbosidad.OMNISCIENTE)
+	#administrador = AdministradorDeJuego(["puntosbot_mk1", "puntosbot_mk2"], verbosidad=AdministradorDeJuego.Verbosidad.OMNISCIENTE)
+	administrador = AdministradorDeJuego(sys.argv[1:], verbosidad=AdministradorDeJuego.Verbosidad.OMNISCIENTE)
 	ganador = administrador.jugarPartida()
 	print(f"Ganador: {ganador}")

@@ -1,7 +1,12 @@
 # Módulo Jugador
 
-## JugadorBase
-Para que un jugador pueda entenderse con el `AdministradorDeJuego`, se necesita que [subclasifique](https://www.w3schools.com/python/python_inheritance.asp) la clase `JugadorBase`. Esta clase define los métodos que `AdministradorDeJuego` invoca sobre cada jugador para resolver las acciones de juego (cómo se quiere robar, si se quieren jugar dúos, cómo se pasa de ronda, etc.). Por supuesto, además de implementar estos métodos necesarios, un jugador puede definir tantas variables internas y métodos auxiliares como sean necesarios.
+Para que un jugador pueda entenderse con el [`AdministradorDeJuego`](https://github.com/AugustoNicola/oceanos-juego/blob/main/src/administrador/README.md), se necesita que [subclasifique](https://www.w3schools.com/python/python_inheritance.asp) la clase [`JugadorBase`](https://github.com/AugustoNicola/oceanos-juego/blob/main/src/jugador/base.py). Esta clase define los métodos que `AdministradorDeJuego` invoca sobre cada jugador para resolver las acciones de juego (cómo se quiere robar, si se quieren jugar dúos, cómo se pasa de ronda, etc.). Por supuesto, además de implementar estos métodos necesarios, un jugador puede definir tantas variables internas y métodos auxiliares como sean necesarios.
+
+## Nombre de jugador
+
+Todo jugador define su nombre a través de `@registrarComo("un_nombre")`. Este nombre es el que esperan tanto el `AdministradorDeJuego` como la [interfaz web](https://github.com/AugustoNicola/oceanos-interfaz).
+
+## Métodos a Implementar
 
 ### Método `decidirAcciónDeRobo()`
 
@@ -47,7 +52,7 @@ Este método se invoca al principio de cada ronda para que el Bot pueda realizar
 
 ### Método `configurarFinDeRonda(manos, puntajesDeRonda)`
 
-Este método se invoca al final de cada ronda para que el Bot pueda realizar los cálculos que quiera de acuerdo al estado de la partida luego de jugar la ronda. Además, como en esta fase los jugadores tienen que revelar sus manos y contar sus puntajes de ronda, esta información se hace pública para todos los Bots a través de los parámetros pasados. No se necesita devolver nada en particular.
+Este método se invoca al final de cada ronda para que el Bot pueda realizar los cálculos que quiera de acuerdo al estado de la partida luego de jugar la ronda. Además, como en esta fase los jugadores tienen que revelar sus manos y contar sus puntajes de ronda, esta información se hace pública para todos los Jugadores a través de los parámetros pasados. No se necesita devolver nada en particular.
 
 ### Método `configurarInicioDeTurno()`
 
@@ -60,4 +65,4 @@ La clase de `JugadorBase` ya implementa algunos métodos auxiliares para facilit
 
 ## Jugadores Implementados
 
-Ya están implementados varios Bots con distintas ideas. Podés probarlos con el [administrador de juego](../administrador/README.md) o el [sistema de matchups](../matchup/README.md)!
+Ya están implementados varios Jugadores con distintas ideas. Podés probarlos por terminal con el [administrador de juego](../administrador/README.md), con el [sistema de matchups](../matchup/README.md), y ahora también a través de la [interfaz web](https://github.com/AugustoNicola/oceanos-interfaz)!

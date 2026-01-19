@@ -1,32 +1,8 @@
+import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from juego.carta import Carta, apodosCartas
-from jugador.RandyBot.randy import RandyBot
-from jugador.PuntosBot.puntosbot_mk1 import PuntosBotMk1
-from jugador.PuntosBot.puntosbot_mk2 import PuntosBotMk2
-from jugador.SirenaTeam.sirena_enjoyer import SirenaEnjoyer
-from jugador.SirenaTeam.sirena_hater import SirenaHater
 from administrador.administrador_de_juego import AdministradorDeJuego
-
-#* vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-#* vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-#* vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-#* vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-#* vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-_jugadoresDelMatchup = [
-	PuntosBotMk2,
-	PuntosBotMk1
-]
-_nombres = [
-	"MK2",
-	"MK1"
-]
-_cantidadDePartidasAJugar = 600
-#* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 class Matchup():
 	def __init__(self, jugadoresDelMatchup, nombres):
@@ -72,6 +48,7 @@ class Matchup():
 			
 			for e in self.administrador._cantidadDeCartasPorJugadorPorTipo[j]:
 				self.administrador._cantidadDeCartasPorJugadorPorTipo[j][e] = self.administrador._cantidadDeCartasPorJugadorPorTipo[j][e] / self.administrador._rondasTerminadas
+		return ganador
 	
 	def _graficar(self):
 		cantidadJugadores = len(self.jugadoresDelMatchup)
@@ -217,6 +194,13 @@ class Matchup():
 		plt.savefig(nombreDelArchivo + '.jpg', format='jpg')
 
 if __name__ == '__main__':
-	simulador = Matchup(_jugadoresDelMatchup, _nombres)
-	simulador.simular(_cantidadDePartidasAJugar)
+	cantidadJugadores = int(sys.argv[2])
+	
+	print(f"Jugadores: {sys.argv[3:3+cantidadJugadores]}")
+	print(f"Nombres: {sys.argv[3+cantidadJugadores:3+(2*cantidadJugadores)]}")
+	print(f"Cantidad de partidas: {int(sys.argv[1])}")
+	print(f"Comenzando duelo...")
+	
+	simulador = Matchup(sys.argv[3:3+cantidadJugadores], sys.argv[3+cantidadJugadores:3+(2*cantidadJugadores)])
+	simulador.simular(int(sys.argv[1]))
 	simulador.mostrarGráficos()

@@ -2,10 +2,10 @@
 # Módulo de Juego
 
 ## Cartas
-La clase `Carta` define la estructura de una carta del juego. Las cartas son estructuras muy sencillas, que solo tienen un `.tipo` y un `.color`. Ambos atributos son [Enums](https://docs.python.org/3/library/enum.html) con los valores válidos del juego (por ejemplo, `Carta.Tipo.CANGREJO` y `Carta.Color.NARANJA`).
+La clase [`Carta`](https://github.com/AugustoNicola/oceanos-juego/blob/main/src/juego/carta.py) define la estructura de una carta del juego. Las cartas son estructuras muy sencillas, que solo tienen un `tipo` y un `color`. Ambos atributos son [Enums](https://docs.python.org/3/library/enum.html) con los valores válidos del juego (por ejemplo, `Carta.Tipo.CANGREJO` y `Carta.Color.NARANJA`).
 
 ## Partida de Océanos
-La clase `PartidaDeOcéanos` modela el estado y acciones posibles a lo largo de una única partida del juego (con múltiples rondas) entre 2-4 jugadores. Tiene métodos para realizar las acciones correspondientes en cada momento, y expone las propiedades que el jugador actual debería concoer en una partida real.
+La clase [`PartidaDeOcéanos`](https://github.com/AugustoNicola/oceanos-juego/blob/main/src/juego/partida.py) modela el estado y acciones posibles a lo largo de una única partida del juego (con múltiples rondas) entre 2-4 jugadores. Tiene métodos para realizar las acciones correspondientes en cada momento, y expone las propiedades que el jugador actual debería concoer en una partida real.
 
 ### Métodos de acción
 Los métodos disponibles públicamente que "hacen algo en el juego" son los siguientes:
@@ -24,10 +24,10 @@ Los métodos disponibles públicamente que "hacen algo en el juego" son los sigu
 
 La clase entiende qué ordenes de estos eventos son válidos y envía un error en caso de intentarse realizar una acción inválida (como pasar de turno antes de robar, o descartar una carta en una pila no existente).
 
-Estos métodos NO DEBEN SER USADOS DESDE LOS BOTS, sino que serán invocados acorde a lo retornado por cada uno de los métodos de la interfaz de `JugadorBase`.
+Estos métodos NO DEBEN SER USADOS DESDE LOS [JUGADORES](https://github.com/AugustoNicola/oceanos-juego/tree/main/src/jugador), sino que serán invocados por el [`AdministradorDeJuego`](https://github.com/AugustoNicola/oceanos-juego/tree/main/src/administrador) acorde a lo retornado por cada uno de los métodos de la interfaz de [`JugadorBase`](https://github.com/AugustoNicola/oceanos-juego/blob/main/src/jugador/base.py).
 
 ### Atributos públicos
-Se exponen los siguientes atributos y métodos públicos (son públicos porque su nombre no arranca con _):
+Se exponen los siguientes atributos y métodos públicos (son públicos porque su nombre no arranca con `_`):
 
 * `topeDelDescarte`: devuelve una tupla con la carta en el tope de cada pila de descarte (o `None` si la pila está vacía)
 * `cantidadDeCartasEnDescarte`: devuelve una tupla con la cantidad de cartas en cada pila de descarte
@@ -44,5 +44,5 @@ Se exponen los siguientes atributos y métodos públicos (son públicos porque s
 * `últimaChanceGanada()`: si la ronda terminó por ¡Última chance!, devuelve si la apuesta fue ganada o no. En caso contrario, devuelve `None`
 * `rondaAnulada()`: devuelve si la ronda terminó por quedar cero cartas en el mazo al iniciar un turno
 
-Estos métodos y atributos están pensados ser usados desde los Bots, ya que conforman información que los jugadores tienen en una partida real.
+Estos métodos y atributos están pensados ser usados desde los Jugadores, ya que conforman información que los jugadores tienen en una partida real.
 
