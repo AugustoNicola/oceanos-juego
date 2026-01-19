@@ -47,13 +47,13 @@ None
 1
 ```
 
-Para más información sobre los métodos y atributos disponibles para usar en los Jugadores, ver [el README de juego/](src\juego\README.md).
+Para más información sobre los métodos y atributos disponibles para usar en los Jugadores, ver [el README de juego/](src/juego/README.md).
 
 ### Administrador de Juego
 
 La clase `AdministradorDeJuego` actúa como puente entre instancias de `PartidaDeOcéanos` y los Jugadores. Su tarea es invocar los métodos correspondientes que los Jugadores implementan y usar sus respuestas para resolver las diferentes fases del juego con llamadas a métodos de `PartidaDeOcéanos`.
 
-Para más información sobre cómo el administrador traduce entre `PartidaDeOcéanos` y Jugadores, ver [el README de administrador/](src\administrador\README.md).
+Para más información sobre cómo el administrador traduce entre `PartidaDeOcéanos` y Jugadores, ver [el README de administrador/](src/administrador/README.md).
 
 ```python
 >>> administrador = AdministradorDeJuego(['randybot', 'sirena_hater'])
@@ -67,7 +67,7 @@ Para más información sobre cómo el administrador traduce entre `PartidaDeOcé
 
 Para que un jugador pueda entenderse con el `AdministradorDeJuego`, se necesita que [subclasifique](https://www.w3schools.com/python/python_inheritance.asp) la clase `JugadorBase`. Esta clase define los cinco métodos que `AdministradorDeJuego` invoca sobre cada jugador para resolver las acciones de juego (cómo se quiere robar, si se quieren jugar dúos, cómo se pasa de ronda, etc.). Por supuesto, además de implementar estos métodos necesarios, un jugador puede definir tantas variables internas y métodos auxiliares como sean necesarios.
 
-Para más información sobre cómo implementar un Bot y ejemplos, ver [el README de jugador/](src\jugador\README.md).
+Para más información sobre cómo implementar un Bot y ejemplos, ver [el README de jugador/](src/jugador/README.md).
 
 ```python
 >>> juego = PartidaDeOcéanos(cantidadDeJugaodres=2) # creamos una partida
@@ -90,12 +90,12 @@ Acción.Robo.DEL_MAZO
 
 ![](assets/matchup.png)
 
-Para más información sobre cómo hacer un matchup entre Jugadores y ejemplos, ver [el README de matchup/](src\matchup\README.md).
+Para más información sobre cómo hacer un matchup entre Jugadores y ejemplos, ver [el README de matchup/](src/matchup/README.md).
 
 
 ### Backend
 
 Este módulo se encarga de responder a las peticiones de la [interfaz web](https://github.com/AugustoNicola/oceanos-interfaz) para poder jugar una partida desde el navegador.
 
-Para más información sobre cómo preparar el backend para jugar por la interfaz, ver [el README de backend/](src\backend\README.md).
+Para más información sobre cómo preparar el backend para jugar por la interfaz, ver [el README de backend/](src/backend/README.md).
 
