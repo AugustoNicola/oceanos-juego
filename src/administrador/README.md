@@ -21,13 +21,13 @@ El parámetro `verbosidad` en el constructor de la clase controla si se imprime 
 
 El administrador también recolecta diversas estadísticas de las partidas:
 
-* `_cantidadDeCartasPorJugadorPorTipo[jugador]`
-* `_partidasGanadasPorJugador`: 
-* `_puntosPorJugadorPorRonda`: 
-* `_dúosJugadosPorJugadorPorTipo`: 
-* `_dúosEnManoPorJugadorPorTipo`: 
-* `_motivosFinDeRonda`: 
-* `_motivosFinDeRondaPorJugador`: 
+* `_cantidadDeCartasPorJugadorPorTipo`
+* `_partidasGanadasPorJugador`
+* `_puntosPorJugadorPorRonda`
+* `_dúosJugadosPorJugadorPorTipo`
+* `_dúosEnManoPorJugadorPorTipo` 
+* `_motivosFinDeRonda`
+* `_motivosFinDeRondaPorJugador`
 
 Esta información puede ser accedida en cualquier momento a través de los atributos privados de la clase. Se usa por ejemplo en el [sistema de Matchups](https://github.com/AugustoNicola/oceanos-juego/blob/main/src/matchup/README.md).
 

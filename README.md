@@ -67,8 +67,6 @@ Para más información sobre cómo el administrador traduce entre `PartidaDeOcé
 
 Para que un jugador pueda entenderse con el `AdministradorDeJuego`, se necesita que [subclasifique](https://www.w3schools.com/python/python_inheritance.asp) la clase `JugadorBase`. Esta clase define los cinco métodos que `AdministradorDeJuego` invoca sobre cada jugador para resolver las acciones de juego (cómo se quiere robar, si se quieren jugar dúos, cómo se pasa de ronda, etc.). Por supuesto, además de implementar estos métodos necesarios, un jugador puede definir tantas variables internas y métodos auxiliares como sean necesarios.
 
-Para más información sobre cómo implementar un Bot y ejemplos, ver [el README de jugador/](src/jugador/README.md).
-
 ```python
 >>> juego = PartidaDeOcéanos(cantidadDeJugaodres=2) # creamos una partida
 >>> miBot = RandyBot()
@@ -83,6 +81,9 @@ Acción.Robo.DEL_MAZO
 >>> miBot.decidirCómoRobarDelMazo(cartas)
 (0, 1)
 ```
+
+Para más información sobre cómo implementar un Jugador y ejemplos, ver [el README de jugador/](src/jugador/README.md).
+
 
 ### Matchups
 

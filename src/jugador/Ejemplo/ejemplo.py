@@ -11,7 +11,7 @@ class EjemploDeBot(JugadorBase):
 	# ========================= INTERFAZ DE JUEGO =========================
 	def __init__(self) -> None:
 		super().__init__()
-		#* Acá se pueden hacer más cosas, como definir variables del Bot
+		#* Acá se pueden hacer más cosas, como definir variables del Jugador
 	
 	def configurarParaJuego(self, juego: PartidaDeOcéanos, númeroDeJugador: int, listaDeEventos: list[Evento]) -> None:
 		super().configurarParaJuego(juego, númeroDeJugador, listaDeEventos)
@@ -50,7 +50,7 @@ class EjemploDeBot(JugadorBase):
 		raise Exception("¡Implementame!")
 	
 	# ============================ AUXILIARES =============================
-	#* Acá se pueden definir más auxiliares para ser usados por tu Bot!
+	#* Acá se pueden definir más auxiliares para ser usados por tu Jugador!
 	def miAuxiliarFachero(self, soyFachero: bool) -> str:
 		if soyFachero:
 			return "Soy fachero!"
