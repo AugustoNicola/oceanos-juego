@@ -9,8 +9,8 @@ from ..base import JugadorBase
 from jugador.registro import registrarComo
 import ast
 
-@registrarComo("puntosbot_mk3")
-class PuntosBotMk3(JugadorBase):
+@registrarComo("puntosbot_mk4")
+class PuntosBotMk4(JugadorBase):
 
 	class Config:
 		# Para pasar de strings a Carta.Tipo
@@ -33,6 +33,8 @@ class PuntosBotMk3(JugadorBase):
 		def __init__(self):
 			self.MULTIPLICADOR_OBTENIDO = None
 			self.SIRENA = None
+			self.ACCESIBILIDAD_COLOR = None
+			self.RACHA_COLOR = None
 			self.PRIMER_DE_DÚO = {
 				Carta.Tipo.PEZ: None,
 				Carta.Tipo.BARCO: None,
@@ -124,8 +126,8 @@ class PuntosBotMk3(JugadorBase):
 		self._descarteEstimado: tuple[Multiset[Carta], Multiset[Carta]] = (Multiset([]), Multiset([]))
 		self._manosEstimadas: list[Multiset[Carta]] = None
 		
-		self._config: PuntosBotMk3.Config = PuntosBotMk3.Config()
-		self._config.cargarDesdeArchivo("./jugador/PuntosBot/configuracion_mk3.txt")
+		self._config: PuntosBotMk4.Config = PuntosBotMk4.Config()
+		self._config.cargarDesdeArchivo("./jugador/PuntosBot/configuracion_mk4.txt")
 		
 		# Estos almacenan los PUNTOS REALES que dan, NO la valoración subjetiva del bot
 		self.PUNTOS_PRIMER_COLECCIONABLE = {
@@ -147,11 +149,11 @@ class PuntosBotMk3(JugadorBase):
 		valorEstimadoMazo = self._valorPromedioMazoEstimado()
 		valorEstimadoDescarte0 = (
 			self._valorDeCarta(self._juego.topeDelDescarte[0], explorar=True)
-			if self._juego.cantidadDeCartasEnDescarte[0] > 0 else -1.0
+			if self._juego.cantidadDeCartasEnDescarte[0] > 0 else 0.0
 		)
 		valorEstimadoDescarte1 = (
 			self._valorDeCarta(self._juego.topeDelDescarte[1], explorar=True)
-			if self._juego.cantidadDeCartasEnDescarte[1] > 0 else -1.0
+			if self._juego.cantidadDeCartasEnDescarte[1] > 0 else 0.0
 		)
 		
 		if self._verbose:
@@ -440,7 +442,7 @@ class PuntosBotMk3(JugadorBase):
 	# ============================ AUXILIARES =============================
 	def _valorDeCarta(self, carta: Carta, explorar: bool = False) -> float:
 		valor = 0.0
-		# Primero, aumentamos el valor en caso de que tengamos el multiplicador correspondiente en mano
+		# Aumentamos el valor en caso de que tengamos el multiplicador correspondiente en mano
 		if carta.tipo == Carta.Tipo.BARCO and self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.FARO) > 0:
 			valor += 1.0 + self._config.MULTIPLICADOR_OBTENIDO
 		elif carta.tipo == Carta.Tipo.ANCLA and self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.CAPITÁN) > 0:
@@ -450,6 +452,15 @@ class PuntosBotMk3(JugadorBase):
 		elif carta.tipo == Carta.Tipo.PEZ and self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.CARDUMEN) > 0:
 			valor += 1.0 + self._config.MULTIPLICADOR_OBTENIDO
 		
+		# Aumentamos el valor de acuerdo al color de la carta
+		valor += (
+			self._cantidadDeCartasAccesiblesDeColor(carta.color) * self._config.ACCESIBILIDAD_COLOR +
+			self._cantidadDeCartasPertenecientesDeColor(carta.color) * self._config.RACHA_COLOR
+		)
+		
+		# Y también consideramos si esto nos sumaría un punto por ser de uno de nuestros colores afectados por sirena
+		cantidadDeSirenas = self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.SIRENA)
+		valor += carta.color in self._coloresDescendientesPorCantidad()[0:cantidadDeSirenas]
 		
 		if carta.esColeccionable():
 			if self._cantidadDeCartasDeTipoEnMano(carta.tipo) > 0:
@@ -593,6 +604,20 @@ class PuntosBotMk3(JugadorBase):
 				cantidadDeCartasDeTipo += 1
 		return cantidadDeCartasDeTipo
 	
+	def _cantidadDeCartasAccesiblesDeColor(self, colorBuscado: Carta.Color) -> int:
+		return (
+			len(list(filter(lambda c: c.color == colorBuscado, self._mazoEstimado.elements()))) +
+			(self._juego.topeDelDescarte[0] != None and self._juego.topeDelDescarte[0].color == colorBuscado) +
+			(self._juego.topeDelDescarte[1] != None and self._juego.topeDelDescarte[1].color == colorBuscado)
+		)
+	
+	def _cantidadDeCartasPertenecientesDeColor(self, colorBuscado: Carta.Color) -> int:
+		return (
+			len(list(filter(lambda c: c.color == colorBuscado, self._juego.mano.elements()))) +
+			len(list(filter(lambda d: d[0].color == colorBuscado, self._juego.zonaDeDúos.elements()))) +
+			len(list(filter(lambda d: d[1].color == colorBuscado, self._juego.zonaDeDúos.elements())))
+		)
+	
 	def _tipoAfectadoPorMultiplicador(self, tipo: Carta.Tipo) -> Carta.Tipo:
 		if tipo == Carta.Tipo.CAPITÁN:
 			return Carta.Tipo.ANCLA
@@ -673,6 +698,23 @@ class PuntosBotMk3(JugadorBase):
 			cantidadDeCartasDeColor[claveDeDúo[1].color] += self._juego.zonaDeDúos[claveDeDúo]
 		
 		return (sorted(list(cantidadDeCartasDeColor.values()), reverse=True))
+	
+	def _coloresDescendientesPorCantidad(self) -> list[int]:
+		cantidadDeCartasDeColor = {}
+		
+		for claveDeCarta in self._juego.mano:
+			if cantidadDeCartasDeColor.get(claveDeCarta.color) == None:
+				cantidadDeCartasDeColor[claveDeCarta.color] = 0
+			cantidadDeCartasDeColor[claveDeCarta.color] += self._juego.mano[claveDeCarta]
+		for claveDeDúo in self._juego.zonaDeDúos:
+			if cantidadDeCartasDeColor.get(claveDeDúo[0].color) == None:
+				cantidadDeCartasDeColor[claveDeDúo[0].color] = 0
+			cantidadDeCartasDeColor[claveDeDúo[0].color] += self._juego.zonaDeDúos[claveDeDúo]
+			if cantidadDeCartasDeColor.get(claveDeDúo[1].color) == None:
+				cantidadDeCartasDeColor[claveDeDúo[1].color] = 0
+			cantidadDeCartasDeColor[claveDeDúo[1].color] += self._juego.zonaDeDúos[claveDeDúo]
+		
+		return list(sorted(cantidadDeCartasDeColor, key=cantidadDeCartasDeColor.get, reverse=True))
 	
 	def _printValorDeTodasLasCartas(self):
 		total = 0.0
