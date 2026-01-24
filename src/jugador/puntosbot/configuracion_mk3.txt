@@ -1,0 +1,38 @@
+# Bonificacion por tomar una carta de un tipo para el cual ya tenemos un multiplicador
+MULTIPLICADOR_OBTENIDO = 0.0
+# Bonificacion por tomar sirenas
+SIRENA = 0.0
+
+# Bonificaciones por tomar multiplicadores
+OBTENER_MULTIPLICADOR_CARDUMEN = 0.0
+OBTENER_MULTIPLICADOR_FARO = 0.0
+OBTENER_MULTIPLICADOR_COLONIA = 0.0
+OBTENER_MULTIPLICADOR_CAPITÁN = 0.0
+
+# Bonificaciones por tomar la primera carta de un dúo
+PRIMER_DE_DÚO_PEZ = 0.02
+PRIMER_DE_DÚO_BARCO = 0.06
+PRIMER_DE_DÚO_CANGREJO = 0.12
+PRIMER_DE_DÚO_NADADOR = 0.16
+# Igual al de nadador
+PRIMER_DE_DÚO_TIBURÓN = 0.16
+
+# Bonificaciones por tomar la segunda carta de un dúo
+COMPLETAR_DÚO_PEZ = 0.0
+COMPLETAR_DÚO_BARCO = 0.0
+COMPLETAR_DÚO_CANGREJO = 0.0
+COMPLETAR_DÚO_NADADOR = 0.0
+# Igual al de nadador
+COMPLETAR_DÚO_TIBURÓN = 0.0
+
+# Bonificaciones por tomar la primera carta de una colección
+ARRANCAR_COLECCIONABLE_CONCHA = 0.08
+ARRANCAR_COLECCIONABLE_PULPO = 0.09
+ARRANCAR_COLECCIONABLE_PINGUINO = 0.01
+ARRANCAR_COLECCIONABLE_ANCLA = 0.4
+
+# Bonificaciones por tomar subsiguientes cartas de una colección
+SEGUIR_COLECCIONABLE_CONCHA = 0.0
+SEGUIR_COLECCIONABLE_PULPO = 0.0
+SEGUIR_COLECCIONABLE_PINGUINO = 0.0
+SEGUIR_COLECCIONABLE_ANCLA = 0.0

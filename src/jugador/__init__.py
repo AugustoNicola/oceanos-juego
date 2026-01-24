@@ -2,6 +2,7 @@ import jugador.CLI
 import jugador.Ejemplo
 import jugador.PuntosBot.puntosbot_mk1
 import jugador.PuntosBot.puntosbot_mk2
+import jugador.PuntosBot.puntosbot_mk3
 import jugador.RandyBot.randy
 import jugador.SirenaTeam.sirena_enjoyer
 import jugador.SirenaTeam.sirena_hater
