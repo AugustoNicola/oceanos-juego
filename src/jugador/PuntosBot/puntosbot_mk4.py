@@ -11,106 +11,9 @@ import ast
 
 @registrarComo("puntosbot_mk4")
 class PuntosBotMk4(JugadorBase):
-
-	class Config:
-		# Para pasar de strings a Carta.Tipo
-		STRING_A_TIPO = {
-			"PEZ": Carta.Tipo.PEZ,
-			"BARCO": Carta.Tipo.BARCO,
-			"CANGREJO": Carta.Tipo.CANGREJO,
-			"NADADOR": Carta.Tipo.NADADOR,
-			"TIBURÓN": Carta.Tipo.TIBURÓN,
-			"CONCHA": Carta.Tipo.CONCHA,
-			"PULPO": Carta.Tipo.PULPO,
-			"PINGUINO": Carta.Tipo.PINGUINO,
-			"ANCLA": Carta.Tipo.ANCLA,
-			"CARDUMEN": Carta.Tipo.CARDUMEN,
-			"FARO": Carta.Tipo.FARO,
-			"COLONIA": Carta.Tipo.COLONIA,
-			"CAPITÁN": Carta.Tipo.CAPITÁN
-		}
-		
-		def __init__(self):
-			self.MULTIPLICADOR_OBTENIDO = None
-			self.SIRENA = None
-			self.ACCESIBILIDAD_COLOR = None
-			self.RACHA_COLOR = None
-			self.PRIMER_DE_DÚO = {
-				Carta.Tipo.PEZ: None,
-				Carta.Tipo.BARCO: None,
-				Carta.Tipo.CANGREJO: None,
-				Carta.Tipo.NADADOR: None,
-				Carta.Tipo.TIBURÓN: None
-			}
-			self.COMPLETAR_DÚO = {
-				Carta.Tipo.PEZ: None,
-				Carta.Tipo.BARCO: None,
-				Carta.Tipo.CANGREJO: None,
-				Carta.Tipo.NADADOR: None,
-				Carta.Tipo.TIBURÓN: None
-			}
-			self.ARRANCAR_COLECCIONABLE = {
-				Carta.Tipo.CONCHA: None,
-				Carta.Tipo.PULPO: None,
-				Carta.Tipo.PINGUINO: None,
-				Carta.Tipo.ANCLA: None
-			}
-			self.SEGUIR_COLECCIONABLE = {
-				Carta.Tipo.CONCHA: None,
-				Carta.Tipo.PULPO: None,
-				Carta.Tipo.PINGUINO: None,
-				Carta.Tipo.ANCLA: None
-			}
-			self.OBTENER_MULTIPLICADOR = {
-				Carta.Tipo.CARDUMEN: None,
-				Carta.Tipo.FARO: None,
-				Carta.Tipo.COLONIA: None,
-				Carta.Tipo.CAPITÁN: None
-			}
-		
-		def cargarDesdeArchivo(self, path: str):
-			with open(path, "r", encoding="utf-8") as archivo:
-				for líneaArchivo in archivo:
-					líneaArchivo = líneaArchivo.strip()
-
-					# Saltear líneas vacías o de comentarios
-					if not líneaArchivo or líneaArchivo.startswith("#"):
-						continue
-
-					if "=" not in líneaArchivo:
-						raise ValueError(f"Invalid config line: {líneaArchivo}")
-
-					label, valor = líneaArchivo.split("=", 1)
-					label = label.strip()
-					valor = valor.strip()
-
-					try:
-						valorParseado = ast.literal_eval(valor)
-					except Exception as e:
-						raise ValueError(f"No pude parsear el valor de {label}") from e
-
-					self._asignar(label, valorParseado)
-		
-		def _asignar(self, label: str, valor):
-			for sufijo, tipoCarta in self.STRING_A_TIPO.items():
-				sufijoABuscar = f"_{sufijo}"
-				if label.endswith(sufijoABuscar):
-					prefijoEncontrado = label[:-len(sufijoABuscar)]
-
-					diccionario = getattr(self, prefijoEncontrado, None)
-					if not isinstance(diccionario, dict):
-						raise TypeError(
-							f"{prefijoEncontrado} existe pero no es diccionario (es {type(diccionario)})"
-						)
-
-					diccionario[tipoCarta] = valor
-					return
-
-			# Comportamiento para no diccionarios
-			setattr(self, label, valor)
-	
-	
+	# =====================================================================
 	# ========================= INTERFAZ DE JUEGO =========================
+	# =====================================================================
 	def __init__(self):
 		super().__init__()
 		
@@ -128,21 +31,6 @@ class PuntosBotMk4(JugadorBase):
 		
 		self._config: PuntosBotMk4.Config = PuntosBotMk4.Config()
 		self._config.cargarDesdeArchivo("./jugador/PuntosBot/configuracion_mk4.txt")
-		
-		# Estos almacenan los PUNTOS REALES que dan, NO la valoración subjetiva del bot
-		self.PUNTOS_PRIMER_COLECCIONABLE = {
-			Carta.Tipo.CONCHA: 0.0,
-			Carta.Tipo.PULPO: 0.0,
-			Carta.Tipo.PINGUINO: 1.0,
-			Carta.Tipo.ANCLA: 0.0
-		}
-		self.PUNTOS_PROXIMO_COLECCIONABLE = {
-			Carta.Tipo.CONCHA: 2.0,
-			Carta.Tipo.PULPO: 3.0,
-			Carta.Tipo.PINGUINO: 2.0,
-			Carta.Tipo.ANCLA: 5.0
-		}
-		
 	
 	def decidirAcciónDeRobo(self):
 		# Comparamos el valor estimado de nuestras opciones
@@ -439,40 +327,139 @@ class PuntosBotMk4(JugadorBase):
 		if self._verbose:
 			self._printValorDeTodasLasCartas()
 	
+	# =====================================================================
 	# ============================ AUXILIARES =============================
+	# =====================================================================
+	class Config:
+		# Para pasar de strings a Carta.Tipo
+		STRING_A_TIPO = {
+			"PEZ": Carta.Tipo.PEZ,
+			"BARCO": Carta.Tipo.BARCO,
+			"CANGREJO": Carta.Tipo.CANGREJO,
+			"NADADOR": Carta.Tipo.NADADOR,
+			"TIBURÓN": Carta.Tipo.TIBURÓN,
+			"CONCHA": Carta.Tipo.CONCHA,
+			"PULPO": Carta.Tipo.PULPO,
+			"PINGUINO": Carta.Tipo.PINGUINO,
+			"ANCLA": Carta.Tipo.ANCLA,
+			"CARDUMEN": Carta.Tipo.CARDUMEN,
+			"FARO": Carta.Tipo.FARO,
+			"COLONIA": Carta.Tipo.COLONIA,
+			"CAPITÁN": Carta.Tipo.CAPITÁN
+		}
+		
+		def __init__(self):
+			self.MULTIPLICADOR_OBTENIDO = None
+			self.SIRENA = None
+			self.ACCESIBILIDAD_COLOR = None
+			self.RACHA_COLOR = None
+			self.PRIMER_DE_DÚO = {
+				Carta.Tipo.PEZ: None,
+				Carta.Tipo.BARCO: None,
+				Carta.Tipo.CANGREJO: None,
+				Carta.Tipo.NADADOR: None,
+				Carta.Tipo.TIBURÓN: None
+			}
+			self.COMPLETAR_DÚO = {
+				Carta.Tipo.PEZ: None,
+				Carta.Tipo.BARCO: None,
+				Carta.Tipo.CANGREJO: None,
+				Carta.Tipo.NADADOR: None,
+				Carta.Tipo.TIBURÓN: None
+			}
+			self.ARRANCAR_COLECCIONABLE = {
+				Carta.Tipo.CONCHA: None,
+				Carta.Tipo.PULPO: None,
+				Carta.Tipo.PINGUINO: None,
+				Carta.Tipo.ANCLA: None
+			}
+			self.SEGUIR_COLECCIONABLE = {
+				Carta.Tipo.CONCHA: None,
+				Carta.Tipo.PULPO: None,
+				Carta.Tipo.PINGUINO: None,
+				Carta.Tipo.ANCLA: None
+			}
+			self.OBTENER_MULTIPLICADOR = {
+				Carta.Tipo.CARDUMEN: None,
+				Carta.Tipo.FARO: None,
+				Carta.Tipo.COLONIA: None,
+				Carta.Tipo.CAPITÁN: None
+			}
+		
+		def cargarDesdeArchivo(self, path: str):
+			with open(path, "r", encoding="utf-8") as archivo:
+				for líneaArchivo in archivo:
+					líneaArchivo = líneaArchivo.strip()
+
+					# Saltear líneas vacías o de comentarios
+					if not líneaArchivo or líneaArchivo.startswith("#"):
+						continue
+
+					if "=" not in líneaArchivo:
+						raise ValueError(f"Invalid config line: {líneaArchivo}")
+
+					label, valor = líneaArchivo.split("=", 1)
+					label = label.strip()
+					valor = valor.strip()
+
+					try:
+						valorParseado = ast.literal_eval(valor)
+					except Exception as e:
+						raise ValueError(f"No pude parsear el valor de {label}") from e
+
+					self._asignar(label, valorParseado)
+		
+		def _asignar(self, label: str, valor):
+			for sufijo, tipoCarta in self.STRING_A_TIPO.items():
+				sufijoABuscar = f"_{sufijo}"
+				if label.endswith(sufijoABuscar):
+					prefijoEncontrado = label[:-len(sufijoABuscar)]
+
+					diccionario = getattr(self, prefijoEncontrado, None)
+					if not isinstance(diccionario, dict):
+						raise TypeError(
+							f"{prefijoEncontrado} existe pero no es diccionario (es {type(diccionario)})"
+						)
+
+					diccionario[tipoCarta] = valor
+					return
+
+			# Comportamiento para no diccionarios
+			setattr(self, label, valor)
+	
 	def _valorDeCarta(self, carta: Carta, explorar: bool = False) -> float:
 		valor = 0.0
 		# Aumentamos el valor en caso de que tengamos el multiplicador correspondiente en mano
-		if carta.tipo == Carta.Tipo.BARCO and self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.FARO) > 0:
+		if carta.tipo == Carta.Tipo.BARCO and self._cantidadDeCartasDeTipoEn(Carta.Tipo.FARO, self.Zona.MI_MANO) > 0:
 			valor += 1.0 + self._config.MULTIPLICADOR_OBTENIDO
-		elif carta.tipo == Carta.Tipo.ANCLA and self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.CAPITÁN) > 0:
+		elif carta.tipo == Carta.Tipo.ANCLA and self._cantidadDeCartasDeTipoEn(Carta.Tipo.CAPITÁN, self.Zona.MI_MANO) > 0:
 			valor += 3.0 + self._config.MULTIPLICADOR_OBTENIDO
-		elif carta.tipo == Carta.Tipo.PINGUINO and self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.COLONIA) > 0:
+		elif carta.tipo == Carta.Tipo.PINGUINO and self._cantidadDeCartasDeTipoEn(Carta.Tipo.COLONIA, self.Zona.MI_MANO) > 0:
 			valor += 2.0 + self._config.MULTIPLICADOR_OBTENIDO
-		elif carta.tipo == Carta.Tipo.PEZ and self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.CARDUMEN) > 0:
+		elif carta.tipo == Carta.Tipo.PEZ and self._cantidadDeCartasDeTipoEn(Carta.Tipo.CARDUMEN, self.Zona.MI_MANO) > 0:
 			valor += 1.0 + self._config.MULTIPLICADOR_OBTENIDO
 		
 		# Aumentamos el valor de acuerdo al color de la carta
 		valor += (
 			self._cantidadDeCartasAccesiblesDeColor(carta.color) * self._config.ACCESIBILIDAD_COLOR +
-			self._cantidadDeCartasPertenecientesDeColor(carta.color) * self._config.RACHA_COLOR
+			self._cantidadDeCartasDeColorEn(carta.color, self.Zona.TODO_MÍO) * self._config.RACHA_COLOR
 		)
 		
 		# Y también consideramos si esto nos sumaría un punto por ser de uno de nuestros colores afectados por sirena
-		cantidadDeSirenas = self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.SIRENA)
+		cantidadDeSirenas = self._cantidadDeCartasDeTipoEn(Carta.Tipo.SIRENA, self.Zona.MI_MANO)
 		valor += carta.color in self._coloresDescendientesPorCantidad()[0:cantidadDeSirenas]
 		
 		if carta.esColeccionable():
-			if self._cantidadDeCartasDeTipoEnMano(carta.tipo) > 0:
+			if self._cantidadDeCartasDeTipoEn(carta.tipo, self.Zona.MI_MANO) > 0:
 				# Si ya tenemos una carta del tipo de coleccionable, su valor es cuánto suma conseguir otro
 				#  y la bonificación por avanzar este tipo de coleccionable
-				valor += self.PUNTOS_PROXIMO_COLECCIONABLE[carta.tipo] + self._config.SEGUIR_COLECCIONABLE[carta.tipo]
+				valor += float(self._valorDeMúltiplesColeccionablesDeTipo(carta.tipo)) + self._config.SEGUIR_COLECCIONABLE[carta.tipo]
 			else:
 				# Si no tenemos una carta del tipo de coleccionable, su valor es cuánto suma conseguir el primero
 				#   más la bonificación por comenzar este coleccionable,
 				#   escalado por qué tan probable es conseguir otro coleccionable del tipo.
 				valor += (
-					self.PUNTOS_PRIMER_COLECCIONABLE[carta.tipo] +
+					float(self._valorDePrimerColeccionableDeTipo(carta.tipo)) +
 					(
 						self._config.ARRANCAR_COLECCIONABLE[carta.tipo]
 						+ (
@@ -485,13 +472,12 @@ class PuntosBotMk4(JugadorBase):
 			#   más una bonificación por conseguir un multiplicador
 			valor += (
 				(
-					self._cantidadDeCartasDeTipoEnMano(self._tipoAfectadoPorMultiplicador(carta.tipo))
-					+ 2 * self._cantidadDeDúosDeTipoJugados(self._tipoAfectadoPorMultiplicador(carta.tipo))
-				) * self._bonificacionPorMultiplicador(carta.tipo) + 
-				self._config.OBTENER_MULTIPLICADOR[carta.tipo]
+					self._cantidadDeCartasDeTipoEn(self._tipoBonificadoPorMultiplicadorDeTipo(carta.tipo), self.Zona.TODO_MÍO)
+					* self._bonificaciónPorMultiplicadorDeTipo(carta.tipo)
+				) + self._config.OBTENER_MULTIPLICADOR[carta.tipo]
 			)
 		elif carta.tipo == Carta.Tipo.PEZ:
-			if self._cantidadDeCartasDeTipoEnMano(carta.tipo) == 0:
+			if self._cantidadDeCartasDeTipoEn(carta.tipo, self.Zona.MI_MANO) == 0:
 				# Si no tenemos una carta para completar el dúo, no vale nada por sí sola,
 				#   y agragamos la bonificación por iniciar el dúo
 				valor += 0.0 + self._config.PRIMER_DE_DÚO[carta.tipo]
@@ -503,7 +489,7 @@ class PuntosBotMk4(JugadorBase):
 				if explorar:
 					valor += self._valorPromedioMazoEstimado()
 		elif carta.tipo == Carta.Tipo.BARCO:
-			if self._cantidadDeCartasDeTipoEnMano(carta.tipo) == 0:
+			if self._cantidadDeCartasDeTipoEn(carta.tipo, self.Zona.MI_MANO) == 0:
 				# Si no tenemos una carta para completar el dúo, no vale nada por sí sola,
 				#   y agragamos la bonificación por iniciar el dúo
 				valor += 0.0 + self._config.PRIMER_DE_DÚO[carta.tipo]
@@ -520,7 +506,7 @@ class PuntosBotMk4(JugadorBase):
 						self._valorDeCarta(self._juego.topeDelDescarte[1]) if self._juego.cantidadDeCartasEnDescarte[1] > 0 else 0.0
 					)
 		elif carta.tipo == Carta.Tipo.CANGREJO:
-			if self._cantidadDeCartasDeTipoEnMano(carta.tipo) == 0:
+			if self._cantidadDeCartasDeTipoEn(carta.tipo, self.Zona.MI_MANO) == 0:
 				# Si no tenemos una carta para completar el dúo, no vale nada por sí sola,
 				#   y agragamos la bonificación por iniciar el dúo
 				valor += 0.0 + self._config.PRIMER_DE_DÚO[carta.tipo]
@@ -533,7 +519,7 @@ class PuntosBotMk4(JugadorBase):
 				if explorar:
 					valor += self._mejorValorDescarteEstimado()
 		elif carta.tipo == Carta.Tipo.NADADOR:
-			if self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.TIBURÓN) == 0:
+			if self._cantidadDeCartasDeTipoEn(Carta.Tipo.TIBURÓN, self.Zona.MI_MANO) == 0:
 				# Si no tenemos una carta para completar el dúo, no vale nada por sí sola,
 				#   y agragamos la bonificación por iniciar el dúo
 				valor += 0.0 + self._config.PRIMER_DE_DÚO[carta.tipo]
@@ -545,7 +531,7 @@ class PuntosBotMk4(JugadorBase):
 				if explorar:
 					valor += self._mejorManoEstimadaAdversarios()[1]
 		elif carta.tipo == Carta.Tipo.TIBURÓN:
-			if self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.NADADOR) == 0:
+			if self._cantidadDeCartasDeTipoEn(Carta.Tipo.NADADOR, self.Zona.MI_MANO) == 0:
 				# Si no tenemos una carta para completar el dúo, no vale nada por sí sola,
 				#   y agragamos la bonificación por iniciar el dúo
 				valor += 0.0 + self._config.PRIMER_DE_DÚO[carta.tipo]
@@ -557,7 +543,7 @@ class PuntosBotMk4(JugadorBase):
 				if explorar:
 					valor += self._mejorManoEstimadaAdversarios()[1]
 		elif carta.tipo == Carta.Tipo.SIRENA:
-			cantidadDeSirenas = self._cantidadDeCartasDeTipoEnMano(Carta.Tipo.SIRENA)
+			cantidadDeSirenas = self._cantidadDeCartasDeTipoEn(Carta.Tipo.SIRENA, self.Zona.MI_MANO)
 			if cantidadDeSirenas == 3:
 				# Si podemos conseguir la cuarta sirena, ¡hemos ganado!
 				valor += SIRENAS_INF
@@ -567,35 +553,6 @@ class PuntosBotMk4(JugadorBase):
 				valor += (self._cantidadDeCartasDeColorDescendientes(agregarSirena=True) + [0,0,0])[cantidadDeSirenas] + self._config.SIRENA
 		
 		return valor
-	
-	def _cantidadDeCartasDeTipoEnMano(self, tipo: Carta.Tipo) -> int:
-		cantidadDeCartasDeTipo = 0
-		for cartaEnMano in self._juego.mano.elements():
-			if cartaEnMano.tipo == tipo:
-				cantidadDeCartasDeTipo += 1
-		return cantidadDeCartasDeTipo
-	
-	def _cantidadDeDúosDeTipoJugados(self, tipo: Carta.Tipo) -> int:
-		cantidadDeDúosEnJuego = 0
-		for dúoEnJuego in self._juego.zonaDeDúos.elements():
-			if dúoEnJuego[0].tipo == tipo or dúoEnJuego[1].tipo == tipo:
-				cantidadDeDúosEnJuego += 1
-		return cantidadDeDúosEnJuego
-	
-	def _valorDePrimerColeccionableTipo(self, tipo: Carta.Tipo) -> int:
-		return 1 if tipo == Carta.Tipo.PINGUINO else 0
-	
-	def _valorDeMúltiplesColeccionableTipo(self, tipo: Carta.Tipo) -> int:
-		if tipo == Carta.Tipo.ANCLA:
-			return 5
-		elif tipo == Carta.Tipo.CONCHA:
-			return 2
-		elif tipo == Carta.Tipo.PULPO:
-			return 3
-		elif tipo == Carta.Tipo.PINGUINO:
-			return 2
-		else:
-			raise Exception("El tipo enviado no es de coleccionable!")
 	
 	def _cantidadDeCartasDeTipoEnMazoEstimado(self, tipo: Carta.Tipo) -> int:
 		cantidadDeCartasDeTipo = 0
@@ -610,37 +567,6 @@ class PuntosBotMk4(JugadorBase):
 			(self._juego.topeDelDescarte[0] != None and self._juego.topeDelDescarte[0].color == colorBuscado) +
 			(self._juego.topeDelDescarte[1] != None and self._juego.topeDelDescarte[1].color == colorBuscado)
 		)
-	
-	def _cantidadDeCartasPertenecientesDeColor(self, colorBuscado: Carta.Color) -> int:
-		return (
-			len(list(filter(lambda c: c.color == colorBuscado, self._juego.mano.elements()))) +
-			len(list(filter(lambda d: d[0].color == colorBuscado, self._juego.zonaDeDúos.elements()))) +
-			len(list(filter(lambda d: d[1].color == colorBuscado, self._juego.zonaDeDúos.elements())))
-		)
-	
-	def _tipoAfectadoPorMultiplicador(self, tipo: Carta.Tipo) -> Carta.Tipo:
-		if tipo == Carta.Tipo.CAPITÁN:
-			return Carta.Tipo.ANCLA
-		elif tipo == Carta.Tipo.COLONIA:
-			return Carta.Tipo.PINGUINO
-		elif tipo == Carta.Tipo.FARO:
-			return Carta.Tipo.BARCO
-		elif tipo == Carta.Tipo.CARDUMEN:
-			return Carta.Tipo.PEZ
-		else:
-			raise Exception("El tipo enviado no es de multiplicador!")
-	
-	def _bonificacionPorMultiplicador(self, tipo: Carta.Tipo) -> int:
-		if tipo == Carta.Tipo.CAPITÁN:
-			return 3
-		elif tipo == Carta.Tipo.COLONIA:
-			return 2
-		elif tipo == Carta.Tipo.FARO:
-			return 1
-		elif tipo == Carta.Tipo.CARDUMEN:
-			return 1
-		else:
-			raise Exception("El tipo enviado no es de multiplicador!")
 	
 	def _valorPromedioMazoEstimado(self) -> float:
 		valorTotalMazoEstimado = 0.0
@@ -684,37 +610,6 @@ class PuntosBotMk4(JugadorBase):
 					mejorAdversario = j
 		
 		return (mejorAdversario, mejorPromedioManoEstimadaAdversarios)
-	
-	def _cantidadDeCartasDeColorDescendientes(self, agregarSirena = False) -> list[int]:
-		cantidadDeCartasDeColor = {color: 0 for color in Carta.Color}
-		
-		if agregarSirena:
-			cantidadDeCartasDeColor[Carta.Color.BLANCO] += 1
-		
-		for claveDeCarta in self._juego.mano:
-			cantidadDeCartasDeColor[claveDeCarta.color] += self._juego.mano[claveDeCarta]
-		for claveDeDúo in self._juego.zonaDeDúos:
-			cantidadDeCartasDeColor[claveDeDúo[0].color] += self._juego.zonaDeDúos[claveDeDúo]
-			cantidadDeCartasDeColor[claveDeDúo[1].color] += self._juego.zonaDeDúos[claveDeDúo]
-		
-		return (sorted(list(cantidadDeCartasDeColor.values()), reverse=True))
-	
-	def _coloresDescendientesPorCantidad(self) -> list[int]:
-		cantidadDeCartasDeColor = {}
-		
-		for claveDeCarta in self._juego.mano:
-			if cantidadDeCartasDeColor.get(claveDeCarta.color) == None:
-				cantidadDeCartasDeColor[claveDeCarta.color] = 0
-			cantidadDeCartasDeColor[claveDeCarta.color] += self._juego.mano[claveDeCarta]
-		for claveDeDúo in self._juego.zonaDeDúos:
-			if cantidadDeCartasDeColor.get(claveDeDúo[0].color) == None:
-				cantidadDeCartasDeColor[claveDeDúo[0].color] = 0
-			cantidadDeCartasDeColor[claveDeDúo[0].color] += self._juego.zonaDeDúos[claveDeDúo]
-			if cantidadDeCartasDeColor.get(claveDeDúo[1].color) == None:
-				cantidadDeCartasDeColor[claveDeDúo[1].color] = 0
-			cantidadDeCartasDeColor[claveDeDúo[1].color] += self._juego.zonaDeDúos[claveDeDúo]
-		
-		return list(sorted(cantidadDeCartasDeColor, key=cantidadDeCartasDeColor.get, reverse=True))
 	
 	def _printValorDeTodasLasCartas(self):
 		total = 0.0
