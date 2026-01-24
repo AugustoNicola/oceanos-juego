@@ -17,6 +17,10 @@ Esta clase espera ser creada con un arreglo de nombres de los jugadores que van 
 
 El parámetro `verbosidad` en el constructor de la clase controla si se imprime en pantalla texto sobre cada acción ocurrida en la partida. Los valores posibles son `Verbosidad.NADA` (no imprimir nada), `Verbosidad.JUGADOR` (imprimir sólo información pública) y `Verbosidad.OMNISCIENTE` (imprimir toda la información).
 
+### Randomizar Orden de jugadores
+
+El parámetro `randomizarOrden` en el constructor de la clase controla si el orden en el que se sientan los Jugadores se randomiza entre partidas. La primer partida siempre se juega en el orden en que los jugadores se inscribieron.
+
 ### Estadísticas de juego
 
 El administrador también recolecta diversas estadísticas de las partidas:

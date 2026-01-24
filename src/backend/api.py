@@ -24,7 +24,8 @@ def crearPartida(request: dict):
     PARTIDAS[idPartida] = AdministradorDeJuego(
         request["jugadores"],
         verbosidad=AdministradorDeJuego.Verbosidad.OMNISCIENTE,
-        partidaActiva=True
+        partidaActiva=True,
+        randomizarOrden=False
     )
     JUGADORES_ACTIVOS[idPartida] = request["posición_jugador_activo"]
     

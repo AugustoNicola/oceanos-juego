@@ -1,4 +1,5 @@
 import sys
+from random import shuffle
 from copy import copy, deepcopy
 from enum import Enum, auto
 from .acción import Acción
@@ -20,12 +21,28 @@ class AdministradorDeJuego():
 		DUOS = auto()
 		FIN = auto()
 	
-	def __init__(self, nombresDeJugadores, verbosidad=Verbosidad.NADA, partidaActiva=False):
+	def __init__(self, nombresDeJugadores, verbosidad=Verbosidad.NADA, partidaActiva=False, randomizarOrden=False):
 		if not verbosidad in AdministradorDeJuego.Verbosidad:
 			raise Exception("Usar el enum AdministradorDeJuego.Verbosidad")
 		
+		self._cantidadDeJugadores = len(nombresDeJugadores)
+		
+		# clases de los jugadores nombrados al crear el administrador. Nunca cambia de orden.
 		self._clasesDeJugadores = [jugador.registro.JUGADORES[nombreClase] for nombreClase in nombresDeJugadores]
+		
+		# instancias de jugadores, adaptados al orden de la partida actual. Va cambiando de orden.
 		self._jugadores: list[jugador.base.JugadorBase] = [None] * len(nombresDeJugadores)
+		
+		# Este arreglo almacena la biyección entre el orden en que los jugadores fueron ingresados al sistema
+		#   (en self._jugadores), y el orden real en los asientos de la partida actual
+		# self._ordenPartidaJugadores[i] = j significa que el asiento j-ésimo lo está ocupando el jugador i-ésimo
+		#    ej, self._ordenPartidaJugadores[0] = 2 significa que self._clasesDeJugadores[2]
+		#    empieza jugando esta partida
+		# Siempre se comienza en el mismo orden en el que se inscribieron los jugadores al administrador
+		self._ordenPartidaJugadores = list(range(self._cantidadDeJugadores))
+		self._próximoOrdenPartidaJugadores = list(range(self._cantidadDeJugadores))
+		self._randomizarOrden = randomizarOrden
+		
 		self._juego = None
 		self._verbosidad = verbosidad
 		self._eventos = []
@@ -39,23 +56,24 @@ class AdministradorDeJuego():
 		self._rondasTerminadas = 0
 		self._rondasTerminadasSinFinPorSirenas = 0
 		
-		self._cantidadDeCartasPorJugadorPorTipo = [{tipo: 0 for tipo in Carta.Tipo} for _ in range(len(self._jugadores))]
-		self._partidasGanadasPorJugador = [0 for _ in range(len(self._jugadores))]
-		self._puntosPorJugadorPorRonda = [ [] for _ in range(len(self._jugadores)) ]
+		# Estos arreglos de estadísticas están indexados por el orden de clase jugador (el que no cambia nunca)
+		self._cantidadDeCartasPorJugadorPorTipo = [{tipo: 0 for tipo in Carta.Tipo} for _ in range(self._cantidadDeJugadores)]
+		self._partidasGanadasPorJugador = [0 for _ in range(self._cantidadDeJugadores)]
+		self._puntosPorJugadorPorRonda = [ [] for _ in range(self._cantidadDeJugadores) ]
 		
 		self._dúosJugadosPorJugadorPorTipo = [{
 			Carta.Tipo.PEZ: 0,
 			Carta.Tipo.BARCO: 0,
 			Carta.Tipo.CANGREJO: 0,
 			Carta.Tipo.NADADOR: 0
-		} for _ in range(len(self._jugadores))]
+		} for _ in range(self._cantidadDeJugadores)]
 		
 		self._dúosEnManoPorJugadorPorTipo = [{
 			Carta.Tipo.PEZ: 0,
 			Carta.Tipo.BARCO: 0,
 			Carta.Tipo.CANGREJO: 0,
 			Carta.Tipo.NADADOR: 0
-		} for _ in range(len(self._jugadores))]
+		} for _ in range(self._cantidadDeJugadores)]
 		
 		self._motivosFinDeRonda = {
 			"0_CARTAS": 0,
@@ -69,7 +87,7 @@ class AdministradorDeJuego():
 			"ÚLTIMA_CHANCE_GANADA": 0,
 			"ÚLTIMA_CHANCE_PERDIDA": 0,
 			"4_SIRENAS": 0,
-		} for _ in range(len(self._jugadores))]
+		} for _ in range(self._cantidadDeJugadores)]
 	
 	def jugarPartida(self):
 		self._inicializarPartida()
@@ -128,9 +146,9 @@ class AdministradorDeJuego():
 		return {
 			"mazo": self._juego._mazo,
 			"descarte": self._juego._descarte,
-			"estadosDeJugadores": [self.obtenerEstadoJugador(númeroJugador) for númeroJugador in range(len(self._jugadores))],
+			"estadosDeJugadores": [self.obtenerEstadoJugador(númeroJugador) for númeroJugador in range(self._cantidadDeJugadores)],
 			"puntajes": self._juego.puntajes,
-			"puntajesRonda": [self._juego._estadosDeJugadores[j].puntajeDeRonda() for j in range(len(self._jugadores))],
+			"puntajesRonda": [self._juego._estadosDeJugadores[j].puntajeDeRonda() for j in range(self._cantidadDeJugadores)],
 			"deQuienEsTurno": self._juego.deQuiénEsTurno,
 			"últimaChanceEnCurso": self._juego.últimaChanceEnCurso(),
 			"fase": self._juego._estadoActual.name
@@ -142,10 +160,20 @@ class AdministradorDeJuego():
 		}
 	
 	def _inicializarPartida(self):
-		self._juego = PartidaDeOcéanos(cantidadDeJugadores=len(self._jugadores))
+		# Cambiamos el orden de los jugadores en esta partida
+		if self._randomizarOrden:
+			self._ordenPartidaJugadores = self._próximoOrdenPartidaJugadores.copy()
+			shuffle(self._próximoOrdenPartidaJugadores)
+		
+		self._juego = PartidaDeOcéanos(cantidadDeJugadores=self._cantidadDeJugadores)
 		for j in range(len(self._clasesDeJugadores)):
-			self._jugadores[j] = (self._clasesDeJugadores[j])()
+			self._jugadores[j] = (self._clasesDeJugadores[self._claseJugadorEnPosición(j)])()
 			self._jugadores[j].configurarParaJuego(self._juego, j, self._eventos)
+		if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
+			print("~~~~~~~~~~~~~~~~~~~~ Orden Partida ~~~~~~~~~~~~~~~~~~~~~~")
+			for j in range(self._cantidadDeJugadores):
+				print((self._clasesDeJugadores[self._claseJugadorEnPosición(j)].__name__))
+			print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 	
 	def _inicializarRonda(self):
 		if self._partidaActiva and not self._permisoParaSeguir:
@@ -161,12 +189,12 @@ class AdministradorDeJuego():
 			print(f"Jugador inicial: {self._juego.deQuiénEsTurno}")
 			print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 				
-		for j in range(len(self._jugadores)):
+		for j in range(self._cantidadDeJugadores):
 			self._jugadores[j].configurarInicioDeRonda(self._juego.topeDelDescarte)
 	
 	def _faseInicioTurno(self):
 		if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
-			print(f"~~~~~~~~~~~~~~~~~~~ Turno del jugador {self._juego.deQuiénEsTurno} ~~~~~~~~~~~~~~~~~~~~")
+			print(f"~~~~~~~~~~~~~~~~~~~~ Turno del jugador {self._juego.deQuiénEsTurno} ~~~~~~~~~~~~~~~~~~~~")
 			print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 			if self._verbosidad == AdministradorDeJuego.Verbosidad.OMNISCIENTE:
 				print(f"El descarte 0 es {(self._juego._descarte[0])}")
@@ -328,7 +356,7 @@ class AdministradorDeJuego():
 			acciónDeFinDeTurno = self._jugadores[self._juego.deQuiénEsTurno].decidirAcciónDeFinDeTurno()
 			
 			self._eventos.append(Evento(self._juego.deQuiénEsTurno, acciónDeFinDeTurno, {
-				"puntajesRonda": [ int(self._juego._estadosDeJugadores[j].puntajeDeRonda()) for j in range(len(self._jugadores))]
+				"puntajesRonda": [ int(self._juego._estadosDeJugadores[j].puntajeDeRonda()) for j in range(self._cantidadDeJugadores)]
 			}))
 			
 			cuerpoEventoFin = {}
@@ -353,9 +381,9 @@ class AdministradorDeJuego():
 				elif self._juego.últimaChanceGanada() != None:
 					# ronda terminada por última chance
 					
-					puntajesRonda = [0 for _ in range(len(self._jugadores))]
+					puntajesRonda = [0 for _ in range(self._cantidadDeJugadores)]
 					
-					for j in range(len(self._jugadores)):
+					for j in range(self._cantidadDeJugadores):
 						if self._juego.últimaChanceGanada():
 							if j == self._juego.jugadorQueDijoÚltimaChance:
 								puntajesRonda[j] = self._juego._estadosDeJugadores[j].puntajeDeRonda() + self._juego._estadosDeJugadores[j]._bonificacionPorColor()
@@ -378,7 +406,7 @@ class AdministradorDeJuego():
 				if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
 					print("¡¡¡Basta!!!")
 				cuerpoEventoFin = {
-					"puntajesRonda": [ int(self._juego._estadosDeJugadores[j].puntajeDeRonda()) for j in range(len(self._jugadores))]
+					"puntajesRonda": [ int(self._juego._estadosDeJugadores[j].puntajeDeRonda()) for j in range(self._cantidadDeJugadores)]
 				}
 			elif acciónDeFinDeTurno == Acción.FinDeTurno.DECIR_ÚLTIMA_CHANCE:
 				# Decir última chance y pasar el turno
@@ -395,7 +423,7 @@ class AdministradorDeJuego():
 		self._rondasTerminadas += 1
 		if max(self._juego.puntajes) == SIRENAS_INF:
 			self._motivosFinDeRonda["4_SIRENAS"] += 1
-			self._motivosFinDeRondaPorJugador[self._juego.jugadorGanador]["4_SIRENAS"] += 1
+			self._motivosFinDeRondaPorJugador[self._claseJugadorEnPosición(self._juego.jugadorGanador)]["4_SIRENAS"] += 1
 			if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
 				print("################### CUATRO SIRENAS ###################")
 				print(f"Ganador: {self._juego.jugadorGanador}")
@@ -408,7 +436,7 @@ class AdministradorDeJuego():
 		elif self._juego.rondaAnulada():
 			self._rondasTerminadasSinFinPorSirenas += 1
 			self._motivosFinDeRonda["0_CARTAS"] += 1
-			for j in range(len(self._jugadores)):
+			for j in range(self._cantidadDeJugadores):
 				self._puntosPorJugadorPorRonda[j].append(0)
 			if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
 				print("********* Ronda anulada por cero cartas en mazo *********")
@@ -419,20 +447,22 @@ class AdministradorDeJuego():
 			self._rondasTerminadasSinFinPorSirenas += 1
 			self._motivosFinDeRonda["ÚLTIMA_CHANCE"] += 1
 			if self._juego.últimaChanceGanada():
-				self._motivosFinDeRondaPorJugador[self._juego.jugadorQueDijoÚltimaChance]["ÚLTIMA_CHANCE_GANADA"] += 1
+				self._motivosFinDeRondaPorJugador[self._claseJugadorEnPosición(self._juego.jugadorQueDijoÚltimaChance)]["ÚLTIMA_CHANCE_GANADA"] += 1
 			else:
-				self._motivosFinDeRondaPorJugador[self._juego.jugadorQueDijoÚltimaChance]["ÚLTIMA_CHANCE_PERDIDA"] += 1
-			for j in range(len(self._jugadores)):
+				self._motivosFinDeRondaPorJugador[self._claseJugadorEnPosición(self._juego.jugadorQueDijoÚltimaChance)]["ÚLTIMA_CHANCE_PERDIDA"] += 1
+			for j in range(self._cantidadDeJugadores):
+				índiceClaseJugador = self._claseJugadorEnPosición(j)
+				
 				if self._juego.últimaChanceGanada():
 					if j == self._juego.jugadorQueDijoÚltimaChance:
-						self._puntosPorJugadorPorRonda[j].append(self._juego._estadosDeJugadores[j].puntajeDeRonda() + self._juego._estadosDeJugadores[j]._bonificacionPorColor())
+						self._puntosPorJugadorPorRonda[índiceClaseJugador].append(self._juego._estadosDeJugadores[j].puntajeDeRonda() + self._juego._estadosDeJugadores[j]._bonificacionPorColor())
 					else:
-						self._puntosPorJugadorPorRonda[j].append(self._juego._estadosDeJugadores[j]._bonificacionPorColor())
+						self._puntosPorJugadorPorRonda[índiceClaseJugador].append(self._juego._estadosDeJugadores[j]._bonificacionPorColor())
 				else:
 					if j == self._juego.jugadorQueDijoÚltimaChance:
-						self._puntosPorJugadorPorRonda[j].append(self._juego._estadosDeJugadores[j]._bonificacionPorColor())
+						self._puntosPorJugadorPorRonda[índiceClaseJugador].append(self._juego._estadosDeJugadores[j]._bonificacionPorColor())
 					else:
-						self._puntosPorJugadorPorRonda[j].append(self._juego._estadosDeJugadores[j].puntajeDeRonda())
+						self._puntosPorJugadorPorRonda[índiceClaseJugador].append(self._juego._estadosDeJugadores[j].puntajeDeRonda())
 			if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
 				print("*********** Ronda terminada por última chance ***********")
 				if self._juego.últimaChanceGanada():
@@ -453,9 +483,10 @@ class AdministradorDeJuego():
 		else:
 			self._rondasTerminadasSinFinPorSirenas += 1
 			self._motivosFinDeRonda["BASTA"] += 1
-			self._motivosFinDeRondaPorJugador[(self._juego.deQuiénEsTurno - 1) % self._juego.cantidadDeJugadores]["BASTA"] += 1
-			for j in range(len(self._jugadores)):
-				self._puntosPorJugadorPorRonda[j].append(self._juego._estadosDeJugadores[j].puntajeDeRonda())
+			self._motivosFinDeRondaPorJugador[self._claseJugadorEnPosición((self._juego.deQuiénEsTurno - 1) % self._juego.cantidadDeJugadores)]["BASTA"] += 1
+			for j in range(self._cantidadDeJugadores):
+				índiceClaseJugador = self._claseJugadorEnPosición(j)
+				self._puntosPorJugadorPorRonda[índiceClaseJugador].append(self._juego._estadosDeJugadores[j].puntajeDeRonda())
 			if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
 				print("*************** Ronda terminada por basta ***************")
 				for j in range(self._juego.cantidadDeJugadores):
@@ -463,29 +494,44 @@ class AdministradorDeJuego():
 				print("*********************************************************")
 		
 		if self._verbosidad != self.Verbosidad.NADA:
-			for j in range(len(self._jugadores)):
+			for j in range(self._cantidadDeJugadores):
 				print(f"Mano del jugador {j}:\n{self._juego._estadosDeJugadores[j].mano}")
 				print(f"zona de dúos del jugador {j}:\n{self._juego._estadosDeJugadores[j].zonaDeDúos}\n")
 		
 		self._calcularEstadísticasDeRonda()
 		
 		quiénArranca = self._juego._deQuiénEsTurno
-		manos = [deepcopy(self._juego._estadosDeJugadores[j].mano) for j in range(len(self._jugadores))]
-		puntajesDeRonda = [ int(self._juego._estadosDeJugadores[j].puntajeDeRonda()) for j in range(len(self._jugadores))]
-		for j in range(len(self._jugadores)):
+		manos = [deepcopy(self._juego._estadosDeJugadores[j].mano) for j in range(self._cantidadDeJugadores)]
+		puntajesDeRonda = [ int(self._juego._estadosDeJugadores[j].puntajeDeRonda()) for j in range(self._cantidadDeJugadores)]
+		for j in range(self._cantidadDeJugadores):
 			self._juego._deQuiénEsTurno = j
 			self._jugadores[j].configurarFinDeRonda(manos, puntajesDeRonda)
 		self._juego._deQuiénEsTurno = quiénArranca
 	
 	def _finDePartida(self):
-		self._partidasGanadasPorJugador[self._juego.jugadorGanador] += 1
+		self._partidasGanadasPorJugador[self._claseJugadorEnPosición(self._juego.jugadorGanador)] += 1
 		if self._verbosidad != AdministradorDeJuego.Verbosidad.NADA:
 			print("!!!!!!!!!!!!!!!!!!! Partida Terminada !!!!!!!!!!!!!!!!!!!")
 			print(f"Ganador: {self._juego.jugadorGanador}")
 			print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	
+	def _claseJugadorEnPosición(self, índicePosiciónBuscada: int) -> int:
+		# Dado un índice de self._jugadores (orden de ESTA partida),
+		#   obtener cuál es el correspondiente índice en self._clasesDeJugadores
+		return self._ordenPartidaJugadores[índicePosiciónBuscada]
+	
+	def _posiciónDeClaseJugador(self, índiceClaseJugadorBuscado: int) -> int:
+		# Dado un índice de self._clasesDeJugadores (ordenes estáticos introducidos al sistema),
+		#   obtener cuál es el correspondiente índice en self._jugadores de ESTA partida
+		return next((
+			índicePartida for índicePartida, índiceClase in enumerate(self._ordenPartidaJugadores)
+			if índiceClase == índiceClaseJugadorBuscado
+		), None)
+	
 	def _calcularEstadísticasDeRonda(self):
-		for j in range(len(self._jugadores)):
+		for posición in range(self._cantidadDeJugadores):
+			índiceClaseJugador = self._claseJugadorEnPosición(posición)
+			
 			# Cálculos auxiliares...
 			cantidadDeCartasEnManoDeTipo = {tipo: 0 for tipo in Carta.Tipo}
 			cantidadDeCartasEnZonaDeDúosDeTipo = {tipo: 0 for tipo in Carta.Tipo}
@@ -496,31 +542,30 @@ class AdministradorDeJuego():
 				Carta.Tipo.NADADOR: 0    # noo maldito enum que no me deja poner nombres declarativos!
 			}
 			
-			for claveDeCarta in self._juego._estadosDeJugadores[j].mano:
-				cantidadDeCartasEnManoDeTipo[claveDeCarta.tipo] += self._juego._estadosDeJugadores[j].mano[claveDeCarta]
+			for claveDeCarta in self._juego._estadosDeJugadores[posición].mano:
+				cantidadDeCartasEnManoDeTipo[claveDeCarta.tipo] += self._juego._estadosDeJugadores[posición].mano[claveDeCarta]
 			
-			for claveDeDúo in self._juego._estadosDeJugadores[j].zonaDeDúos:
-				cantidadDeDúosEnJuegoDeTipo[claveDeDúo[0].tipo] += self._juego._estadosDeJugadores[j].zonaDeDúos[claveDeDúo]
-				cantidadDeCartasEnZonaDeDúosDeTipo[claveDeDúo[0].tipo] += self._juego._estadosDeJugadores[j].zonaDeDúos[claveDeDúo]
-				cantidadDeCartasEnZonaDeDúosDeTipo[claveDeDúo[1].tipo] += self._juego._estadosDeJugadores[j].zonaDeDúos[claveDeDúo]
+			for claveDeDúo in self._juego._estadosDeJugadores[posición].zonaDeDúos:
+				cantidadDeDúosEnJuegoDeTipo[claveDeDúo[0].tipo] += self._juego._estadosDeJugadores[posición].zonaDeDúos[claveDeDúo]
+				cantidadDeCartasEnZonaDeDúosDeTipo[claveDeDúo[0].tipo] += self._juego._estadosDeJugadores[posición].zonaDeDúos[claveDeDúo]
+				cantidadDeCartasEnZonaDeDúosDeTipo[claveDeDúo[1].tipo] += self._juego._estadosDeJugadores[posición].zonaDeDúos[claveDeDúo]
 			
 			
 			# Calcular dúos en juego del jugador en esta ronda
 			for tipoDúo in [Carta.Tipo.PEZ, Carta.Tipo.BARCO, Carta.Tipo.CANGREJO, Carta.Tipo.NADADOR]:
-				self._dúosJugadosPorJugadorPorTipo[j][tipoDúo] += cantidadDeDúosEnJuegoDeTipo[tipoDúo]
+				self._dúosJugadosPorJugadorPorTipo[índiceClaseJugador][tipoDúo] += cantidadDeDúosEnJuegoDeTipo[tipoDúo]
 			
 			# Calcular dúos en mano del jugador en esta ronda
-			self._dúosEnManoPorJugadorPorTipo[j][Carta.Tipo.PEZ] += cantidadDeCartasEnManoDeTipo[Carta.Tipo.PEZ] // 2
-			self._dúosEnManoPorJugadorPorTipo[j][Carta.Tipo.BARCO] += cantidadDeCartasEnManoDeTipo[Carta.Tipo.BARCO] // 2
-			self._dúosEnManoPorJugadorPorTipo[j][Carta.Tipo.CANGREJO] += cantidadDeCartasEnManoDeTipo[Carta.Tipo.CANGREJO] // 2
-			self._dúosEnManoPorJugadorPorTipo[j][Carta.Tipo.NADADOR] += min(cantidadDeCartasEnManoDeTipo[Carta.Tipo.NADADOR], cantidadDeCartasEnManoDeTipo[Carta.Tipo.TIBURÓN])
+			self._dúosEnManoPorJugadorPorTipo[índiceClaseJugador][Carta.Tipo.PEZ] += cantidadDeCartasEnManoDeTipo[Carta.Tipo.PEZ] // 2
+			self._dúosEnManoPorJugadorPorTipo[índiceClaseJugador][Carta.Tipo.BARCO] += cantidadDeCartasEnManoDeTipo[Carta.Tipo.BARCO] // 2
+			self._dúosEnManoPorJugadorPorTipo[índiceClaseJugador][Carta.Tipo.CANGREJO] += cantidadDeCartasEnManoDeTipo[Carta.Tipo.CANGREJO] // 2
+			self._dúosEnManoPorJugadorPorTipo[índiceClaseJugador][Carta.Tipo.NADADOR] += min(cantidadDeCartasEnManoDeTipo[Carta.Tipo.NADADOR], cantidadDeCartasEnManoDeTipo[Carta.Tipo.TIBURÓN])
 			
 			# Calcular cartas poseídas de cada tipo en esta ronda
 			for tipo in Carta.Tipo:
-				self._cantidadDeCartasPorJugadorPorTipo[j][tipo] += cantidadDeCartasEnManoDeTipo[tipo] + cantidadDeCartasEnZonaDeDúosDeTipo[tipo]
+				self._cantidadDeCartasPorJugadorPorTipo[índiceClaseJugador][tipo] += cantidadDeCartasEnManoDeTipo[tipo] + cantidadDeCartasEnZonaDeDúosDeTipo[tipo]
 	
 if __name__ == '__main__':
-	#administrador = AdministradorDeJuego(["puntosbot_mk1", "puntosbot_mk2"], verbosidad=AdministradorDeJuego.Verbosidad.OMNISCIENTE)
 	administrador = AdministradorDeJuego(sys.argv[1:], verbosidad=AdministradorDeJuego.Verbosidad.OMNISCIENTE)
 	ganador = administrador.jugarPartida()
 	print(f"Ganador: {ganador}")

@@ -10,12 +10,17 @@ class Matchup():
 		self.nombres = nombres
 		self.administrador = AdministradorDeJuego(
 			jugadoresDelMatchup,
-			verbosidad=AdministradorDeJuego.Verbosidad.NADA
+			verbosidad=AdministradorDeJuego.Verbosidad.NADA,
+			partidaActiva=False,
+			randomizarOrden=True
 		)
 		
 	def simular(self, cantidadDePartidasAJugar):
 		# =================================================== ¡¡¡¡¡MATCHUP!!!!! ===================================================
 		cantidadJugadores = len(self.jugadoresDelMatchup)
+		
+		if cantidadDePartidasAJugar < 10:
+			raise Exception("Solo puedo jugar al menos diez partidas!")
 		
 		for decimo in range(1, 11):
 			for _ in range(cantidadDePartidasAJugar // 10):
